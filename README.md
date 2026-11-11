@@ -9,4 +9,4 @@ Open the page: https://nasser-lim.github.io/sbs-b1/
 - The win-rate values shown on the page are scaled network outputs, not calibrated probabilities.
 - No license is granted for the weights or page code yet (all rights reserved).
 
-Developer: Taewoo Lim (임태우) - eight@sbs.co.kr
+Developer: 임태우 - eight@sbs.co.kr
