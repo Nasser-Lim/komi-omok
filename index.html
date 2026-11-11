@@ -193,7 +193,7 @@
       <div id="cur" class="empty">분석 중…</div>
     </div>
     <div class="card" id="tab-mine" hidden><div id="mineBody" class="empty">두 수가 쌓이면 표시돼요.</div></div>
-    <div class="card" id="tab-flow" hidden><canvas id="chart" width="600" height="240" aria-label="수순별 흑 승률"></canvas><p class="m">값망 평가를 승률처럼 바꾼 값이에요 (보정 전).</p></div>
+    <div class="card" id="tab-flow" hidden><canvas id="chart" width="600" height="240" aria-label="수순별 내 승률"></canvas><p class="m" id="flowNote">내 승률의 흐름이에요. 값망 평가를 승률처럼 바꾼 값이에요 (보정 전).</p></div>
   </aside>
 
   <main class="game">
@@ -369,7 +369,8 @@ function drawChart() {
   const L = 44, R = 10, T = 10, B = 10, px = (p) => L + (W - L - R) * Math.min(p / Math.max(moves.length, 20), 1), py = (w) => T + (H - T - B) * (1 - w);
   x.font = '16px system-ui'; x.fillStyle = '#8a7f6e'; x.textAlign = 'right'; x.textBaseline = 'middle';
   for (const w of [0, 0.5, 1]) { x.strokeStyle = '#f0e2c8'; x.lineWidth = w === 0.5 ? 2 : 1; x.beginPath(); x.moveTo(L, py(w)); x.lineTo(W - R, py(w)); x.stroke(); x.fillText(pct(w), L - 6, py(w)); }
-  const pts = Object.keys(an).map(Number).filter((p) => p <= moves.length).sort((a, b) => a - b).map((p) => [px(p), py(blackWr(an[p]))]);
+  const mine = (a) => (human === 1 ? blackWr(a) : 1 - blackWr(a));  // 내가 고른 색 기준 승률
+  const pts = Object.keys(an).map(Number).filter((p) => p <= moves.length && an[p].sig === sigOf(p)).sort((a, b) => a - b).map((p) => [px(p), py(mine(an[p]))]);
   if (!pts.length) return;
   x.strokeStyle = '#1d8cf0'; x.lineWidth = 3; x.beginPath(); pts.forEach((q, i) => (i ? x.lineTo(q[0], q[1]) : x.moveTo(q[0], q[1]))); x.stroke();
   x.fillStyle = '#1d8cf0'; for (const q of pts) { x.beginPath(); x.arc(q[0], q[1], 4, 0, 7); x.fill(); }
@@ -421,7 +422,7 @@ function renderPlayers() {
 
 function renderPanel() {
   renderPlayers(); renderRec();
-  if (tab === 'flow') drawChart();
+  if (tab === 'flow') { drawChart(); $('flowNote').textContent = '내 승률(' + (human === 1 ? '흑' : '백') + ')의 흐름이에요. 값망 평가를 승률처럼 바꾼 값이에요 (보정 전).'; }
   // 내 수
   const ev = [];
   for (let i = 0; i < moves.length; i++) if (colorOf(i) === human) { const e = moveEval(i); if (e) ev.push({ i, ...e }); }
