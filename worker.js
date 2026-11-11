@@ -30,11 +30,15 @@ onmessage = async (e) => {
       postMessage({ type: 'ready' });
     } else if (m.type === 'forbidden') {
       b1.setPosition(m.board, m.toMove);
-      postMessage({ type: 'forbidden', id: m.id, fb: b1.forbidden() });
+      postMessage({ type: 'forbidden', sig: m.sig, fb: b1.forbidden() });
     } else if (m.type === 'search') {
       b1.setPosition(m.board, m.toMove);
       const r = b1.search(m.ms, m.ply);
       postMessage({ type: 'move', id: m.id, action: r.action, value: r.value, evals: r.evals, ms: r.ms });
+      if (m.toMove === 2) {  // 사람이 흑이면 다음 국면의 금지 칸을 분석보다 먼저 보낸다 (이게 늦으면 금지 자리를 둘 수 있다)
+        const b2 = m.board.slice(); b2[r.action] = m.toMove; b1.setPosition(b2, 1);
+        postMessage({ type: 'forbidden', sig: m.sig ? m.sig + ',' + r.action : String(r.action), fb: b1.forbidden() });
+      }
       if (m.analyze) analysis(m, r);  // 둔 수는 먼저 보내고, 후보·예상 수순 계산은 그 뒤에 한다
     } else if (m.type === 'hint') {  // 사람 차례의 국면을 짧게 탐색해 후보·평가를 낸다
       b1.setPosition(m.board, m.toMove);
