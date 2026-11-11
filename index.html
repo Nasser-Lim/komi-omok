@@ -335,7 +335,8 @@ function draw() {
   for (const [r, c] of [[3, 3], [3, 11], [11, 3], [11, 11], [7, 7]]) { ctx.beginPath(); ctx.arc(g(c), g(r), m * 0.1, 0, 7); ctx.fill(); }
   ctx.font = Math.round(m * 0.3) + 'px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = 'rgba(95,62,22,.55)';
   for (let i = 0; i < N; i++) { ctx.fillText('ABCDEFGHIJKLMNO'[i], g(i), m * 0.42); ctx.fillText(String(N - i), m * 0.4, g(i)); }
-  const rad = m * 0.46, cur = curAn(), showing = !over && !thinking && cur, fbOn = assist || human === 1;
+  // 도우미 모드에서는 내 차례에만 후보·수순을 보드에 표시한다
+  const rad = m * 0.46, cur = curAn(), showing = !over && !thinking && cur && (!assist || toMove() === human), fbOn = assist || human === 1;
   const xy = (i) => [g(i % N), g((i / N) | 0)];
   for (let i = 0; i < N * N; i++) if (board[i]) { const [x, y] = xy(i); stone(x, y, rad, board[i]); }
   if (last >= 0) { const [x, y] = xy(last); ctx.fillStyle = '#e2513b'; ctx.beginPath(); ctx.arc(x, y, rad * 0.24, 0, 7); ctx.fill(); }
@@ -461,9 +462,10 @@ function renderRec() {
   r.hidden = !assist;
   if (!assist) return;
   if (over) { r.innerHTML = '<span class="k">대국 종료</span>'; return; }
+  if (toMove() !== human) { r.innerHTML = '<span class="k">상대 차례 · 상대가 둔 자리를 보드에 눌러 주세요</span>'; return; }
   if (!a || !a.cands.length) { r.innerHTML = '<span class="k">분석 중…</span>'; return; }
-  const mine = toMove() === human, c = a.cands;
-  r.innerHTML = '<span class="k">' + (mine ? '추천 수' : '상대 예상 수') + '</span><span class="best">' + lab(c[0].a) + '</span><span class="alt">승률 ' + pct((c[0].q + 1) / 2) + (c.length > 1 ? ' · ' + c.slice(1, 3).map((x, k) => (k + 2) + ' ' + lab(x.a)).join(' · ') : '') + '</span>';
+  const c = a.cands;
+  r.innerHTML = '<span class="k">추천 수</span><span class="best">' + lab(c[0].a) + '</span><span class="alt">승률 ' + pct((c[0].q + 1) / 2) + (c.length > 1 ? ' · ' + c.slice(1, 3).map((x, k) => (k + 2) + ' ' + lab(x.a)).join(' · ') : '') + '</span>';
 }
 
 function toMove() { return colorOf(moves.length); }
