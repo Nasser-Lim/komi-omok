@@ -22,9 +22,13 @@
   h1 { font-size:1.15rem; margin:0; letter-spacing:.03em; }
   .icon { width:44px; height:44px; display:grid; place-items:center; border-radius:12px; }
   .icon svg, .bar svg { width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  #inapp[hidden] { display:none; }
   #loading { display:flex; flex-direction:column; gap:4px; font-size:.85rem; color:var(--muted); }
   progress { width:100%; height:8px; accent-color:var(--accent); }
 
+  #inapp { display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--card); border:1px solid var(--accent); border-radius:12px; padding:8px 12px; font-size:.85rem; }
+  #inapp a { color:var(--accent); font-weight:700; min-height:32px; display:inline-flex; align-items:center; }
+  #inapp button { margin-left:auto; min-width:36px; min-height:36px; }
   .hud { display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:8px; }
   .who { display:flex; align-items:center; gap:6px; font-weight:600; padding:6px 10px; border-radius:999px; border:2px solid transparent; }
   .who.on { border-color:var(--accent); }
@@ -90,12 +94,13 @@
     .bar button { max-width:none; flex-direction:row; gap:8px; min-height:48px; border:1px solid var(--edge); font-size:.9rem; }
     .bar button.main { border-color:var(--accent); }
     #btnAn { display:none; }
-    header, #loading, footer { grid-column:1 / -1; }
+    header, #inapp, #loading, footer { grid-column:1 / -1; }
   }
 </style>
 </head>
 <body>
 <div class="app" id="app">
+  <div id="inapp" hidden><span>카카오톡 브라우저에서는 큰 파일(90MB)이 저장되지 않아 매번 받을 수 있어요.</span><a id="openExt" href="#">기본 브라우저로 열기</a><button id="inappX" aria-label="닫기">✕</button></div>
   <header>
     <h1>SBS-B1</h1>
     <button class="icon" id="btnSet" aria-label="설정"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h0a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5h0a1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v0a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
@@ -156,7 +161,7 @@ const N = 15, cv = document.getElementById('board'), ctx = cv.getContext('2d');
 const $ = (id) => document.getElementById(id);
 let worker, ready = false, board = new Array(N * N).fill(0), moves = [], human = 1, over = false, thinking = false, fb = new Array(N * N).fill(0), reqId = 0, last = -1, pending = -1, fbSig = null;
 let an = {};  // 둔 수 개수(ply) -> 그 국면의 분석
-let firstPick = true, tab = 'cand', candView = 'cur', levelMs = 2000, flashTimer = 0;
+let fromCache = false, firstPick = true, tab = 'cand', candView = 'cur', levelMs = 2000, flashTimer = 0;
 const colorOf = (i) => (i % 2 === 0 ? 1 : 2); // 수 번호 i(0부터)의 색: 흑 먼저
 const lab = (a) => 'ABCDEFGHIJKLMNO'[a % N] + (N - ((a / N) | 0));
 const pct = (x) => Math.round(x * 100) + '%';
@@ -384,10 +389,15 @@ function setLevel(ms) { levelMs = ms; for (const b of $('level').children) b.set
 for (const b of $('level').children) b.onclick = () => setLevel(+b.dataset.ms);
 setLevel(store.get('level', 2000));
 
+if (/KAKAOTALK/i.test(navigator.userAgent)) {  // 카카오톡 인앱: 저장이 유지되지 않을 수 있어 외부 브라우저 안내
+  $('inapp').hidden = false; $('openExt').href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href.split('#')[0]);
+  $('inappX').onclick = () => { $('inapp').hidden = true; };
+}
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
 worker = new Worker('worker.js');
 worker.onmessage = (e) => {
   const m = e.data;
-  if (m.type === 'progress') { const p = m.total ? (100 * m.got / m.total) : 0; $('bar').value = m.label === '정책망' ? p * 0.33 : 33 + p * 0.67; $('loadtext').textContent = m.label + ' 내려받는 중 ' + Math.round(m.got / 1e6) + 'MB'; }
+  if (m.type === 'progress') { fromCache = !!m.cached; const p = m.total ? (100 * m.got / m.total) : 0; $('bar').value = m.label === '정책망' ? p * 0.33 : 33 + p * 0.67; $('loadtext').textContent = m.label + (m.cached ? ' 저장본 불러오는 중' : ' 내려받는 중 ' + Math.round(m.got / 1e6) + 'MB'); }
   else if (m.type === 'ready') { ready = true; $('loading').hidden = true; $('btnNew').disabled = false; setStatus('색을 선택하세요'); $('btnNew').click(); }
   else if (m.type === 'forbidden') { if (m.sig === sigOf(moves.length)) { fb = m.fb; fbSig = m.sig; draw(); } }
   else if (m.type === 'move') { if (m.id !== reqId) return; thinking = false; place(m.action); }

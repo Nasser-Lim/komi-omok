@@ -1,9 +1,23 @@
 importScripts('engine.js', 'b1core.js');
 let b1 = null;
+const CACHE = 'sbsb1-models-v1', SIZES = { 'models/a0-s0.lnw': 29890932, 'models/c64-s0.lnw': 59978100 };
+// 가중치는 바뀌지 않으므로 Cache Storage에 직접 저장해 둔다 (HTTP 캐시가 작은 인앱 브라우저 대비). 크기가 다르면 버리고 다시 받는다.
 async function fetchBytes(url, label) {
+  let cache = null;
+  try { cache = await caches.open(CACHE); } catch (e) {}
+  if (cache) {
+    try {
+      const hit = await cache.match(url);
+      if (hit) {
+        const buf = new Uint8Array(await hit.arrayBuffer());
+        if (buf.length === SIZES[url]) { postMessage({ type: 'progress', label, got: buf.length, total: buf.length, cached: true }); return buf; }
+        await cache.delete(url);
+      }
+    } catch (e) {}
+  }
   const r = await fetch(url);
   if (!r.ok) throw new Error(url + ' ' + r.status);
-  const total = +r.headers.get('content-length') || 0, rd = r.body.getReader(), parts = [];
+  const total = +r.headers.get('content-length') || SIZES[url] || 0, rd = r.body.getReader(), parts = [];
   let got = 0;
   for (;;) {
     const { done, value } = await rd.read();
@@ -13,6 +27,7 @@ async function fetchBytes(url, label) {
   }
   const out = new Uint8Array(got); let o = 0;
   for (const p of parts) { out.set(p, o); o += p.length; }
+  if (cache && got === SIZES[url]) { try { await cache.put(url, new Response(out, { headers: { 'content-type': 'application/octet-stream' } })); } catch (e) {} }
   return out;
 }
 function analysis(m, r) {
