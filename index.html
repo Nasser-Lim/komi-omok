@@ -36,6 +36,8 @@
   .opts label { display:flex; gap:4px; align-items:center; cursor:pointer; }
   .pv { font-variant-numeric:tabular-nums; word-break:keep-all; }
   .tag { display:inline-block; padding:0 6px; border-radius:4px; font-weight:600; font-size:.8rem; border:1px solid currentColor; }
+  footer { grid-column:1 / -1; color:var(--muted); font-size:.85rem; border-top:1px solid var(--edge); padding-top:10px; }
+  footer a { color:inherit; }
   .good { color:var(--accent); } .bad { color:var(--bad); }
 </style>
 </head>
@@ -75,6 +77,7 @@
     <div class="card"><h2 id="curTitle">지금 국면</h2><div id="cur" class="note">분석을 기다리는 중…</div></div>
     <div class="card" id="prevCard" hidden><h2 id="prevTitle">B1이 직전에 본 수</h2><div id="prev"></div></div>
   </div>
+  <footer>개발자: 임태우 · <a href="mailto:eight@sbs.co.kr">eight@sbs.co.kr</a></footer>
 </main>
 <script>
 const N = 15, cv = document.getElementById('board'), ctx = cv.getContext('2d');
