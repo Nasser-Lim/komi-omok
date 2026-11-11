@@ -13,26 +13,32 @@
     --bg:#fdf6ea; --ink:#1b2747; --muted:#8a7f6e; --card:#ffffff; --edge:#f0e2c8;
     --blue:#1d8cf0; --blue-d:#0f5fb8; --navy:#12286e; --yellow:#ffcc2e; --yellow-d:#e8a900;
     --bad:#e2513b; --good:#1d8cf0;
-    --shadow:0 6px 18px rgba(120,80,20,.12); --round:18px;
+    --shadow:0 6px 18px rgba(120,80,20,.12); --round:16px;
     color-scheme:light;
   }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   [hidden] { display:none !important; }
+  html, body { height:100%; }
   body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.45 system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif; }
-  h2, button, .pl b, .rec .best { font-family:"Jua",system-ui,sans-serif; font-weight:400; }
+  h2, button, .who b, .rec .best, .brand { font-family:"Jua",system-ui,sans-serif; font-weight:400; }
   button { font-size:inherit; color:inherit; background:none; border:0; padding:0; cursor:pointer; }
   button:disabled { opacity:.4; cursor:default; }
+  svg.i { width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex:none; }
 
-  /* 레이아웃: 모바일은 위에서 아래로 한 줄, 데스크톱은 [보드 | 패널] 두 칸 */
-  .app { max-width:560px; margin:0 auto; padding:max(10px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-left)) calc(92px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-right)); display:flex; flex-direction:column; gap:10px; }
-  .panel { display:contents; }
-  .hero { order:1; position:relative; }
-  .hero img { display:block; width:100%; height:132px; object-fit:cover; object-position:19% 50%; border-radius:20px; box-shadow:var(--shadow); }
-  .hero .gear { position:absolute; top:10px; right:10px; width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,.9); display:grid; place-items:center; box-shadow:var(--shadow); color:var(--navy); }
-  .gear svg, .bar svg { width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
-  #inapp { order:2; } #loading { order:3; } .players { order:4; } .wrbox { order:5; } #status { order:6; } .rec { order:7; }
-  .stage { order:8; } .chips { order:9; } .side { order:10; display:none; flex-direction:column; gap:10px; min-width:0; }
-  .app.open .side { display:flex; }
+  /* 상단 막대 */
+  .top { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:max(8px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 8px max(14px, env(safe-area-inset-left)); }
+  .brand { display:flex; align-items:center; gap:10px; color:var(--navy); }
+  .brand img { width:38px; height:38px; border-radius:50%; box-shadow:var(--shadow); }
+  .brand .name { font-size:1.6rem; letter-spacing:.02em; font-style:italic; }
+  .brand .tag { background:var(--blue); color:#fff; font-size:.8rem; padding:3px 10px; border-radius:999px; }
+  .iconbtn { width:44px; height:44px; border-radius:50%; background:var(--card); display:grid; place-items:center; box-shadow:var(--shadow); color:var(--navy); }
+
+  /* 본문: 모바일은 한 줄 */
+  .app { max-width:560px; margin:0 auto; padding:0 max(14px, env(safe-area-inset-right)) calc(92px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); display:flex; flex-direction:column; gap:12px; }
+  .game { order:1; display:flex; flex-direction:column; gap:8px; min-width:0; }
+  .drawer { order:2; display:none; flex-direction:column; gap:10px; min-width:0; }
+  .app.open .drawer { display:flex; }
+  .drawer-head, .drawer-tab { display:none; }
 
   #inapp { display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:#fff8dc; border:1.5px solid var(--yellow); border-radius:14px; padding:8px 12px; font-size:.85rem; }
   #inapp a { color:var(--blue-d); font-weight:700; }
@@ -40,65 +46,60 @@
   #loading { display:flex; flex-direction:column; gap:6px; font-size:.85rem; color:var(--muted); background:var(--card); border-radius:14px; padding:10px 12px; box-shadow:var(--shadow); }
   progress { width:100%; height:10px; accent-color:var(--blue); }
 
-  /* 선수 카드 */
-  .players { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px; }
-  .pl { display:flex; align-items:center; gap:10px; background:var(--card); border-radius:var(--round); padding:8px 10px; box-shadow:var(--shadow); border:2.5px solid transparent; transition:border-color .2s, transform .2s; min-width:0; }
-  .pl.ai { flex-direction:row-reverse; text-align:right; }
-  .pl.on { border-color:var(--blue); transform:translateY(-2px); }
-  .pl b { display:block; font-size:1.1rem; line-height:1.1; }
-  .pl small { display:block; color:var(--muted); font-size:.78rem; white-space:nowrap; }
-  .pl.on small { color:var(--blue-d); font-weight:700; }
-  .avw { position:relative; flex:none; }
-  .av { width:44px; height:44px; border-radius:50%; display:block; object-fit:cover; }
+  /* 선수 줄: 상대는 보드 위, 나는 보드 아래 */
+  .who { display:flex; align-items:center; gap:10px; min-height:48px; padding:4px 6px; border-radius:14px; transition:background .2s; }
+  .who.on { background:#e6f2ff; }
+  .who .av { width:40px; height:40px; border-radius:50%; flex:none; object-fit:cover; box-shadow:0 2px 6px rgba(0,0,0,.12); }
+  .who .nm { min-width:0; }
+  .who b { display:block; font-size:1.1rem; line-height:1.15; }
+  .who small { display:block; color:var(--muted); font-size:.78rem; white-space:nowrap; }
+  .who.on small { color:var(--blue-d); font-weight:700; }
+  .who .pc { margin-left:auto; font-family:"Jua",sans-serif; font-size:1.15rem; color:var(--navy); font-variant-numeric:tabular-nums; }
   .stone { border-radius:50%; display:inline-block; }
   .stone.b { background:radial-gradient(circle at 35% 30%, #5a5a5a, #0b0b0b 70%); }
   .stone.w { background:radial-gradient(circle at 35% 30%, #fff, #d9d3c7 75%); box-shadow:inset 0 0 0 1px #c9c1b2; }
-  .badge { position:absolute; right:-3px; bottom:-3px; width:18px; height:18px; box-shadow:0 0 0 2px #fff; }
-  .vs { font-family:"Jua",sans-serif; color:var(--muted); font-size:.95rem; }
   .dots::after { content:"…"; animation:dots 1s steps(3) infinite; display:inline-block; width:1em; overflow:hidden; vertical-align:bottom; }
   @keyframes dots { from { width:0 } to { width:1em } }
-
-  /* 승률 */
-  .wrbox { display:flex; align-items:center; gap:8px; font-size:.8rem; font-weight:700; font-variant-numeric:tabular-nums; }
-  .wrbox .s { width:16px; height:16px; flex:none; }
-  .wr { flex:1; display:flex; height:14px; border-radius:999px; overflow:hidden; background:#eadfca; }
-  .wr div { transition:width .4s; } .wr .b { background:linear-gradient(90deg,#2b2b2b,#4a4a4a); } .wr .w { background:#fff; }
-  #wrBt, #wrWt { min-width:3ch; text-align:center; }
-
-  #status { text-align:center; font-family:"Jua",sans-serif; font-size:1.05rem; min-height:1.5em; color:var(--navy); }
+  #status { margin-left:auto; text-align:right; font-family:"Jua",sans-serif; font-size:.95rem; color:var(--navy); }
   #status.win { color:var(--blue-d); } #status.lose { color:var(--bad); }
+  #status:empty { display:none; }
 
   .rec { background:linear-gradient(135deg,#eaf5ff,#fff); border:2px solid var(--blue); border-radius:var(--round); padding:8px 14px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; box-shadow:var(--shadow); }
-  .rec .k { color:var(--blue-d); font-size:.82rem; font-weight:700; } .rec .best { font-size:1.7rem; color:var(--navy); } .rec .alt { color:var(--muted); font-size:.85rem; }
+  .rec .k { color:var(--blue-d); font-size:.82rem; font-weight:700; } .rec .best { font-size:1.6rem; color:var(--navy); } .rec .alt { color:var(--muted); font-size:.85rem; }
 
-  .boardwrap { background:linear-gradient(160deg,#c98f4e,#a86f34); padding:8px; border-radius:20px; box-shadow:0 10px 24px rgba(110,70,20,.25); }
-  canvas#board { width:100%; aspect-ratio:1; display:block; border-radius:13px; touch-action:manipulation; }
+  /* 보드 + 세로 승률 막대 */
+  .stage { display:flex; gap:8px; align-items:stretch; }
+  .evalbar { width:10px; flex:none; border-radius:999px; overflow:hidden; display:flex; flex-direction:column; box-shadow:inset 0 0 0 1px rgba(0,0,0,.08); }
+  .evalbar div { transition:height .4s; }
+  .evalbar .b { background:linear-gradient(90deg,#2b2b2b,#4a4a4a); } .evalbar .w { background:#fff; }
+  .boardwrap { flex:1; min-width:0; background:linear-gradient(160deg,#c98f4e,#a86f34); padding:7px; border-radius:18px; box-shadow:0 10px 24px rgba(110,70,20,.25); }
+  canvas#board { width:100%; aspect-ratio:1; display:block; border-radius:12px; touch-action:manipulation; }
 
-  .chips { display:flex; gap:8px; }
-  .chip { flex:1; min-height:42px; border-radius:999px; background:var(--card); box-shadow:var(--shadow); font-size:1rem; color:var(--ink); }
+  /* 도구 줄 */
+  .tools { display:flex; align-items:center; gap:10px; }
+  .chips { display:flex; gap:4px; background:var(--card); border-radius:999px; padding:4px; box-shadow:var(--shadow); flex:1; }
+  .chip { flex:1; min-height:38px; border-radius:999px; font-size:.95rem; color:var(--muted); padding:0 12px; white-space:nowrap; }
   .chip[aria-pressed=true] { background:var(--navy); color:#fff; }
-
-  /* 하단 메뉴 */
-  .bar { position:fixed; left:0; right:0; bottom:0; display:flex; justify-content:center; gap:10px; padding:10px max(14px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); background:rgba(253,246,234,.92); backdrop-filter:blur(10px); border-top:1px solid var(--edge); z-index:5; }
-  .bar button { flex:1; max-width:170px; min-height:56px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-size:.95rem; border-radius:16px; background:var(--card); box-shadow:var(--shadow); color:var(--navy); }
-  .bar button.main { background:var(--yellow); color:var(--navy); box-shadow:0 4px 0 var(--yellow-d); }
+  .bar { position:fixed; left:0; right:0; bottom:0; display:flex; justify-content:center; gap:10px; padding:10px max(14px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); background:rgba(253,246,234,.94); backdrop-filter:blur(10px); border-top:1px solid var(--edge); z-index:5; }
+  .bar button { flex:1; max-width:170px; min-height:54px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-size:.95rem; border-radius:16px; background:var(--card); box-shadow:var(--shadow); color:var(--navy); }
+  .bar button.main { background:var(--yellow); box-shadow:0 4px 0 var(--yellow-d); }
   .bar button.main:active { transform:translateY(2px); box-shadow:0 2px 0 var(--yellow-d); }
   .bar button[aria-pressed=true] { background:var(--navy); color:#fff; }
 
   /* 분석 */
   .tabs { display:flex; background:var(--card); border-radius:999px; padding:4px; box-shadow:var(--shadow); }
-  .tabs button { flex:1; min-height:42px; border-radius:999px; font-size:1rem; color:var(--muted); }
+  .tabs button { flex:1; min-height:40px; border-radius:999px; font-size:1rem; color:var(--muted); }
   .tabs button[aria-selected=true] { background:var(--blue); color:#fff; }
   .card { background:var(--card); border-radius:var(--round); padding:12px 14px; min-width:0; box-shadow:var(--shadow); }
   .sub { display:flex; gap:6px; margin-bottom:8px; }
   .sub button { padding:4px 12px; min-height:34px; border-radius:999px; background:var(--bg); font-size:.9rem; color:var(--muted); }
   .sub button[aria-pressed=true] { background:var(--navy); color:#fff; }
-  table { width:100%; border-collapse:collapse; font-size:.92rem; font-variant-numeric:tabular-nums; }
-  th, td { text-align:right; padding:8px 4px; border-bottom:1px solid var(--edge); white-space:nowrap; }
+  table { width:100%; border-collapse:collapse; font-size:.9rem; font-variant-numeric:tabular-nums; }
+  th, td { text-align:right; padding:7px 4px; border-bottom:1px solid var(--edge); white-space:nowrap; }
   th:first-child, td:first-child { text-align:left; font-weight:700; } th { color:var(--muted); font-weight:500; font-size:.75rem; }
-  td.rp { text-align:left; color:var(--muted); font-size:.82rem; }
+  td.rp { text-align:left; color:var(--muted); font-size:.8rem; }
   .scroll { overflow-x:auto; }
-  .pv { margin:8px 0 0; font-size:.92rem; } .pv b { color:var(--muted); font-weight:500; font-size:.75rem; display:block; }
+  .pv { margin:8px 0 0; font-size:.9rem; } .pv b { color:var(--muted); font-weight:500; font-size:.75rem; display:block; }
   .m { color:var(--muted); font-size:.78rem; margin:6px 0 0; }
   .grade { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
   .grade .tag { font-family:"Jua",sans-serif; font-size:1.5rem; } .good { color:var(--good); } .bad { color:var(--bad); }
@@ -108,12 +109,13 @@
   canvas#chart { width:100%; aspect-ratio:5 / 2; display:block; }
 
   /* 대화상자 */
-  dialog { border:0; border-radius:24px; padding:0; background:var(--card); color:var(--ink); width:min(92vw,420px); box-shadow:0 20px 50px rgba(0,0,0,.25); }
+  dialog { border:0; border-radius:24px; padding:0; background:var(--card); color:var(--ink); width:min(92vw,440px); box-shadow:0 20px 50px rgba(0,0,0,.25); overflow:hidden; }
   dialog::backdrop { background:rgba(27,39,71,.45); }
+  .dhero { display:block; width:100%; height:150px; object-fit:cover; object-position:19% 50%; }
   .dlg { padding:18px; display:flex; flex-direction:column; gap:12px; }
-  .dlg h2 { margin:0; font-size:1.35rem; color:var(--navy); text-align:center; }
+  .dlg h2 { margin:0; font-size:1.3rem; color:var(--navy); text-align:center; }
   .dlg .gomi { width:84px; height:84px; border-radius:50%; margin:0 auto -4px; display:block; box-shadow:var(--shadow); }
-  .big { min-height:58px; border-radius:16px; background:var(--bg); display:flex; align-items:center; justify-content:center; gap:10px; font-size:1.1rem; color:var(--navy); }
+  .big { min-height:56px; border-radius:16px; background:var(--bg); display:flex; align-items:center; justify-content:center; gap:10px; font-size:1.08rem; color:var(--navy); }
   .big .stone { width:22px; height:22px; }
   .big.p { background:var(--blue); color:#fff; box-shadow:0 4px 0 var(--blue-d); }
   .big.y { background:var(--yellow); box-shadow:0 4px 0 var(--yellow-d); }
@@ -130,54 +132,41 @@
   .close { align-self:center; padding:8px 22px; border-radius:999px; background:var(--bg); min-height:44px; color:var(--muted); }
   .result { text-align:center; font-size:.95rem; color:var(--muted); margin:-4px 0 0; }
 
+  /* 데스크톱: [분석 서랍] [게임] — 보드는 창 높이에 맞춘다 */
   @media (min-width:900px) {
-    :root { --bs:clamp(380px, min(calc(100dvh - 36px), calc(100vw - 500px)), 800px); }
-    .app { max-width:none; flex-direction:row; justify-content:center; align-items:flex-start; gap:22px; padding:18px 20px; }
-    .stage { order:0; width:var(--bs); flex:none; }
-    .panel { display:flex; flex-direction:column; gap:10px; width:min(450px, calc(100vw - var(--bs) - 64px)); min-width:340px; max-height:calc(100dvh - 36px); overflow-y:auto; scrollbar-width:thin; padding:2px 6px 6px 2px; }
-    .hero, #inapp, #loading, .players, .wrbox, #status, .rec, .chips, .side { order:0; }
-    .hero img { height:128px; border-radius:22px; }
-    .side { display:flex; }
-    .bar { position:static; order:0; background:none; border:0; backdrop-filter:none; padding:0; justify-content:flex-start; }
-    .bar button { max-width:none; flex-direction:row; gap:8px; min-height:50px; }
+    :root { --chrome:250px; --wfree:calc(100vw - 120px); }
+    .app.dopen { --wfree:calc(100vw - 470px); }
+    .app.assist { --chrome:316px; }
+    .app { --bs:clamp(320px, min(calc(100dvh - var(--chrome)), var(--wfree)), 820px); max-width:none; flex-direction:row; justify-content:center; align-items:flex-start; gap:24px; padding:0 24px 20px; }
+    .game { order:2; width:calc(var(--bs) + 18px); flex:none; }
+    .evalbar { width:12px; }
+    .drawer { order:1; width:360px; flex:none; max-height:calc(100dvh - 90px); overflow-y:auto; scrollbar-width:thin; padding:2px 4px 6px 2px; position:sticky; top:8px; }
+    .app.open .drawer { display:none; }
+    .app.dopen .drawer { display:flex; }
+    .drawer-head { display:flex; align-items:center; justify-content:space-between; padding:4px 4px 0 6px; }
+    .drawer-head b { font-family:"Jua",sans-serif; font-size:1.15rem; color:var(--navy); }
+    .drawer-head button { min-height:36px; padding:0 12px; border-radius:999px; background:var(--card); box-shadow:var(--shadow); color:var(--muted); display:flex; align-items:center; gap:4px; font-size:.9rem; }
+    .drawer-tab { order:0; display:flex; position:fixed; left:0; top:50%; transform:translateY(-50%); writing-mode:vertical-rl; padding:16px 10px; border-radius:0 14px 14px 0; background:var(--navy); color:#fff; font-size:1rem; gap:8px; align-items:center; box-shadow:var(--shadow); z-index:4; }
+    .app.dopen .drawer-tab { display:none; }
+    .bar { position:static; background:none; border:0; backdrop-filter:none; padding:0; gap:8px; flex:none; }
+    .bar button { flex:none; min-height:46px; padding:0 18px; flex-direction:row; gap:6px; max-width:none; }
     #btnAn { display:none; }
+    .chips { flex:none; }
+    .tools { justify-content:space-between; }
   }
-  @media (min-width:900px) and (max-height:780px) { .hero img { height:92px; } }
 </style>
 </head>
 <body>
-
+<header class="top">
+  <div class="brand"><img src="img/gomi.webp" alt=""><span class="name">KOMI</span><span class="tag">오목 두는 고미</span></div>
+  <button class="iconbtn" id="btnSet" aria-label="설정"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3 1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8 1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+</header>
 
 <div class="app" id="app">
-  <div class="stage"><div class="boardwrap"><canvas id="board" width="760" height="760" aria-label="오목판"></canvas></div></div>
-  <div class="panel">
-  <div class="hero">
-  <img src="img/hero-1200.webp" srcset="img/hero-1200.webp 1200w, img/hero-2400.webp 2400w" sizes="(max-width: 899px) 750px, 1080px" alt="KOMI, 오목 두는 고미" width="2804" height="561">
-  <button class="gear" id="btnSet" aria-label="설정"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3 1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8 1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
-</div>
-  <div id="inapp" hidden><span>카카오톡 안에서는 90MB 파일이 저장되지 않아 매번 받을 수 있어요.</span><a id="openExt" href="#">기본 브라우저로 열기</a><button id="inappX" aria-label="닫기">✕</button></div>
-  <div id="loading"><span id="loadtext">고미를 깨우는 중… (약 90MB, 처음 한 번)</span><progress id="bar" max="100" value="0"></progress></div>
+  <button class="drawer-tab" id="drawerOpen"><svg class="i" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>분석 열기</button>
 
-    <div class="players">
-      <div class="pl" id="whoMe"><div class="avw"><span class="av stone b" id="stMe"></span></div><div><b>나</b><small id="meSub">흑</small></div></div>
-      <span class="vs">VS</span>
-      <div class="pl ai" id="whoAi"><div class="avw"><img class="av" id="aiAv" src="img/gomi.webp" alt=""><span class="av stone w" id="aiStone" hidden></span><span class="badge stone w" id="stAi"></span></div><div><b id="aiName">고미</b><small id="aiSub">백</small></div></div>
-    </div>
-    <div class="wrbox" aria-label="평가 승률"><span class="s stone b"></span><span id="wrBt">50%</span><div class="wr"><div class="b" id="wrB" style="width:50%"></div><div class="w" id="wrW" style="width:50%"></div></div><span id="wrWt">50%</span><span class="s stone w"></span></div>
-    <div id="status">&nbsp;</div>
-    <div class="rec" id="rec" hidden></div>
-    <div class="chips" role="group" aria-label="보드 표시">
-      <button class="chip" id="optCand" aria-pressed="false">후보</button>
-      <button class="chip" id="optPv" aria-pressed="false">수순</button>
-      <button class="chip" id="optHeat" aria-pressed="false">히트맵</button>
-    </div>
-    <nav class="bar" aria-label="메뉴">
-      <button class="main" id="btnNew" disabled><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>새 게임</button>
-      <button id="undo" disabled><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>무르기</button>
-      <button id="btnAn" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>분석</button>
-    </nav>
-
-  <section class="side" id="side">
+  <aside class="drawer" id="side">
+    <div class="drawer-head"><b>분석</b><button id="drawerClose" aria-label="분석 접기"><svg class="i" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>접기</button></div>
     <div class="tabs" role="tablist">
       <button role="tab" data-tab="cand" aria-selected="true">후보</button>
       <button role="tab" data-tab="mine" aria-selected="false">내 수</button>
@@ -189,12 +178,47 @@
     </div>
     <div class="card" id="tab-mine" hidden><div id="mineBody" class="empty">두 수가 쌓이면 표시돼요.</div></div>
     <div class="card" id="tab-flow" hidden><canvas id="chart" width="600" height="240" aria-label="수순별 흑 승률"></canvas><p class="m">값망 평가를 승률처럼 바꾼 값이에요 (보정 전).</p></div>
-  </section>
-  </div>
+  </aside>
+
+  <main class="game">
+    <div id="inapp" hidden><span>카카오톡 안에서는 90MB 파일이 저장되지 않아 매번 받을 수 있어요.</span><a id="openExt" href="#">기본 브라우저로 열기</a><button id="inappX" aria-label="닫기">✕</button></div>
+    <div id="loading"><span id="loadtext">고미를 깨우는 중… (약 90MB, 처음 한 번)</span><progress id="bar" max="100" value="0"></progress></div>
+    <div class="rec" id="rec" hidden></div>
+
+    <div class="who" id="whoAi">
+      <img class="av" id="aiAv" src="img/gomi.webp" alt=""><span class="av stone w" id="aiStone" hidden></span>
+      <div class="nm"><b id="aiName">고미</b><small id="aiSub">백</small></div>
+      <span class="pc" id="wrAi"></span>
+    </div>
+    <div class="stage">
+      <div class="evalbar" aria-label="평가 승률"><div class="w" id="evTop" style="height:50%"></div><div class="b" id="evBot" style="height:50%"></div></div>
+      <div class="boardwrap"><canvas id="board" width="760" height="760" aria-label="오목판"></canvas></div>
+    </div>
+    <div class="who" id="whoMe">
+      <span class="av stone b" id="stMe"></span>
+      <div class="nm"><b>나</b><small id="meSub">흑</small></div>
+      <span id="status"></span>
+      <span class="pc" id="wrMe"></span>
+    </div>
+
+    <div class="tools">
+      <div class="chips" role="group" aria-label="보드 표시">
+        <button class="chip" id="optCand" aria-pressed="false">후보</button>
+        <button class="chip" id="optPv" aria-pressed="false">수순</button>
+        <button class="chip" id="optHeat" aria-pressed="false">히트맵</button>
+      </div>
+      <nav class="bar" aria-label="메뉴">
+        <button class="main" id="btnNew" disabled><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>새 게임</button>
+        <button id="undo" disabled><svg class="i" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>무르기</button>
+        <button id="btnAn" aria-pressed="false"><svg class="i" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>분석</button>
+      </nav>
+    </div>
+  </main>
 </div>
 
-<dialog id="dlgNew"><div class="dlg">
-  <img class="gomi" src="img/gomi.webp" alt="">
+<dialog id="dlgNew">
+  <img class="dhero" src="img/hero-1200.webp" alt="KOMI, 오목 두는 고미">
+  <div class="dlg">
   <h2 id="newTitle">새 게임</h2>
   <button class="big p" id="newBlack"><span class="stone b"></span>고미와 대국 · 내가 흑 (선공)</button>
   <button class="big y" id="newWhite"><span class="stone w"></span>고미와 대국 · 내가 백 (후공)</button>
@@ -232,13 +256,13 @@ const store = { get(k, d) { try { const v = localStorage.getItem('sbsb1.' + k); 
 const pressed = (id) => $(id).getAttribute('aria-pressed') === 'true';
 const AI = () => (assist ? '상대' : '고미');
 
-function setStatus(t, cls) { const s = $('status'); s.textContent = t || ' '; s.className = cls || ''; }
+function setStatus(t, cls) { const s = $('status'); s.textContent = t || ''; s.className = cls || ''; }
 function flash(t) { setStatus(t, 'lose'); clearTimeout(flashTimer); flashTimer = setTimeout(turnStatus, 1400); }
 function turnStatus() {
-  if (!ready) return setStatus('고미를 깨우는 중…');
+  if (!ready) return setStatus('');
   if (over) return;
-  if (assist) return setStatus(toMove() === human ? '내 차례예요 · 추천을 확인하세요' : '상대 차례 · 상대가 둔 수를 입력하세요');
-  setStatus(thinking ? '' : toMove() === human ? '내 차례예요' : '');
+  if (assist) return setStatus(toMove() === human ? '추천을 확인하세요' : '');
+  setStatus('');
 }
 
 function winAt(b, idx, color) {
@@ -363,20 +387,29 @@ function grade(d) { return d >= -0.03 ? ['좋은 수', 'good'] : d >= -0.10 ? ['
 
 function renderPlayers() {
   const ai = 3 - human, my = toMove() === human && !over, his = toMove() !== human && !over;
+  $('app').classList.toggle('assist', assist);
   $('aiName').textContent = AI();
-  $('aiAv').hidden = assist; $('aiStone').hidden = !assist; $('stAi').hidden = assist;
+  $('aiAv').hidden = assist; $('aiStone').hidden = !assist;
   $('aiStone').className = 'av stone ' + (ai === 1 ? 'b' : 'w');
-  $('stMe').className = 'av stone ' + (human === 1 ? 'b' : 'w'); $('stAi').className = 'badge stone ' + (ai === 1 ? 'b' : 'w');
+  $('stMe').className = 'av stone ' + (human === 1 ? 'b' : 'w');
   $('whoMe').classList.toggle('on', my); $('whoAi').classList.toggle('on', his);
   $('meSub').textContent = (human === 1 ? '흑' : '백') + (my ? ' · 내 차례' : '');
   const s = $('aiSub'); s.className = '';
-  if (thinking) { s.textContent = '생각 중'; s.className = 'dots'; } else s.textContent = (ai === 1 ? '흑' : '백') + (his ? ' · 차례' : '');
+  if (thinking) { s.textContent = (ai === 1 ? '흑' : '백') + ' · 생각 중'; s.className = 'dots'; }
+  else s.textContent = (ai === 1 ? '흑' : '백') + (his ? (assist ? ' · 상대 수를 입력하세요' : ' · 차례') : '');
+  // 세로 승률 막대: 아래가 나, 위가 상대
+  let a = null;
+  for (let p = moves.length; p >= 0; p--) if (an[p] && sigOf(p) === an[p].sig) { a = an[p]; break; }
+  const top = $('evTop'), bot = $('evBot');
+  top.className = ai === 1 ? 'b' : 'w'; bot.className = human === 1 ? 'b' : 'w';
+  if (a) {
+    const wb = blackWr(a), me = human === 1 ? wb : 1 - wb;
+    bot.style.height = pct(me); top.style.height = pct(1 - me);
+    $('wrMe').textContent = pct(me); $('wrAi').textContent = pct(1 - me);
+  } else { bot.style.height = top.style.height = '50%'; $('wrMe').textContent = $('wrAi').textContent = ''; }
 }
 
 function renderPanel() {
-  let a = null;
-  for (let p = moves.length; p >= 0; p--) if (an[p] && sigOf(p) === an[p].sig) { a = an[p]; break; }
-  if (a) { const w = blackWr(a); $('wrB').style.width = pct(w); $('wrW').style.width = pct(1 - w); $('wrBt').textContent = pct(w); $('wrWt').textContent = pct(1 - w); }
   renderPlayers(); renderRec();
   if (tab === 'flow') drawChart();
   // 내 수
@@ -429,7 +462,7 @@ function afterMove() {
   const idx = moves[moves.length - 1], color = colorOf(moves.length - 1);
   if (winAt(board, idx, color)) {
     over = true; const won = color === human;
-    setStatus(assist ? (won ? '내 5목 완성!' : '상대 5목 완성') : (won ? '이겼어요! 🎉' : '고미가 이겼어요'), won ? 'win' : 'lose');
+    setStatus(assist ? (won ? '내 5목 완성!' : '상대 5목 완성') : (won ? '이겼어요! 🎉' : '고미 승리'), won ? 'win' : 'lose');
     refresh(); updateButtons();
     if (!assist) showEnd(won ? '이겼어요! 🎉' : '고미가 이겼어요', (won ? '대단해요! ' : '아쉬워요. ') + moves.length + '수 만에 끝났어요.');
     return;
@@ -463,7 +496,7 @@ function next() {
 function place(idx) { board[idx] = colorOf(moves.length); moves.push(idx); last = idx; pending = -1; queuedTap = -1; fb = new Array(N * N).fill(0); fbSig = null; afterMove(); }
 function canUndo() { return assist ? moves.length > 0 : moves.some((_, i) => colorOf(i) === human); }
 function updateButtons() { $('undo').disabled = !ready || thinking || !canUndo(); }
-function newGame(h, asst = false) { reqId++; assist = asst; queuedTap = -1; human = h; board = new Array(N * N).fill(0); moves = []; an = {}; over = false; thinking = false; last = -1; pending = -1; candView = 'cur'; fb = new Array(N * N).fill(0); fbSig = null; next(); }
+function newGame(h, asst = false) { reqId++; assist = asst; queuedTap = -1; human = h; board = new Array(N * N).fill(0); moves = []; an = {}; over = false; thinking = false; last = -1; pending = -1; candView = 'cur'; fb = new Array(N * N).fill(0); fbSig = null; setStatus(''); next(); }
 
 function tapCell(idx) {
   if (!ready || over || thinking || board[idx]) return;
@@ -472,7 +505,7 @@ function tapCell(idx) {
   if (bt && fbSig !== sigOf(moves.length)) { queuedTap = idx; return; }  // 금지 칸 정보가 오면 그때 처리한다
   if (bt && fb[idx]) { pending = -1; draw(); flash('금지 자리예요 (✕)'); return; }
   if (!$('optConfirm').checked || pending === idx) return place(idx);
-  pending = idx; draw(); setStatus('한 번 더 누르면 둡니다');
+  pending = idx; draw(); setStatus('한 번 더 누르면 둬요');
 }
 cv.addEventListener('click', (e) => {
   const rc = cv.getBoundingClientRect(), m = rc.width / (N + 1);
@@ -481,7 +514,7 @@ cv.addEventListener('click', (e) => {
   tapCell(r * N + c);
 });
 
-// 대화상자, 탭, 토글
+// 대화상자, 서랍, 탭, 토글
 const dlg = (id) => { const d = $(id); if (!d.open) d.showModal(); };
 for (const d of document.querySelectorAll('dialog')) {
   d.addEventListener('click', (e) => { if (d.id === 'dlgNew' && firstPick) return; if (e.target === d || e.target.hasAttribute('data-close')) d.close(); });
@@ -503,7 +536,12 @@ $('undo').onclick = () => {
   for (const k of Object.keys(an)) if (+k > moves.length) delete an[k];
   over = false; last = moves.length ? moves[moves.length - 1] : -1; next();
 };
+// 모바일: 분석 버튼이 보드 아래 분석을 펼친다 / 데스크톱: 왼쪽 서랍을 접고 편다
 $('btnAn').onclick = () => { const o = $('app').classList.toggle('open'); $('btnAn').setAttribute('aria-pressed', o); if (o) $('side').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+function setDrawer(o) { $('app').classList.toggle('dopen', o); store.set('drawer', o); }
+$('drawerOpen').onclick = () => setDrawer(true);
+$('drawerClose').onclick = () => setDrawer(false);
+setDrawer(store.get('drawer', innerWidth >= 1200));
 function setTab(t) { tab = t; for (const b of document.querySelectorAll('.tabs button')) b.setAttribute('aria-selected', b.dataset.tab === t); for (const k of ['cand', 'mine', 'flow']) $('tab-' + k).hidden = k !== t; renderPanel(); }
 for (const b of document.querySelectorAll('.tabs button')) b.onclick = () => setTab(b.dataset.tab);
 $('vCur').onclick = () => { candView = 'cur'; renderPanel(); };
@@ -526,7 +564,7 @@ worker = new Worker('worker.js');
 worker.onmessage = (e) => {
   const m = e.data;
   if (m.type === 'progress') { fromCache = !!m.cached; const p = m.total ? (100 * m.got / m.total) : 0; $('bar').value = m.label === '정책망' ? p * 0.33 : 33 + p * 0.67; $('loadtext').textContent = m.cached ? '고미를 깨우는 중… (저장본)' : '고미를 깨우는 중… ' + m.label + ' ' + Math.round(m.got / 1e6) + 'MB'; }
-  else if (m.type === 'ready') { ready = true; $('loading').hidden = true; $('btnNew').disabled = false; setStatus('색을 골라 주세요'); $('btnNew').click(); }
+  else if (m.type === 'ready') { ready = true; $('loading').hidden = true; $('btnNew').disabled = false; $('btnNew').click(); }
   else if (m.type === 'forbidden') { if (m.sig === sigOf(moves.length)) { fb = m.fb; fbSig = m.sig; draw(); if (queuedTap >= 0) { const i = queuedTap; queuedTap = -1; tapCell(i); } } }
   else if (m.type === 'move') { if (m.id !== reqId) return; thinking = false; place(m.action); }
   else if (m.type === 'analysis') {
@@ -536,7 +574,7 @@ worker.onmessage = (e) => {
   else if (m.type === 'error') { setStatus('오류: ' + m.message, 'lose'); thinking = false; hintBusy = false; }
 };
 worker.postMessage({ type: 'init' });
-setStatus('고미를 깨우는 중…'); draw(); renderPanel();
+draw(); renderPanel();
 if (document.fonts) document.fonts.ready.then(() => draw());
 </script>
 </body>
