@@ -2,94 +2,175 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f5f1e8">
 <title>SBS-B1</title>
 <style>
-  :root { --bg:#f5f1e8; --fg:#2a2620; --muted:#7a7366; --board:#e3b96a; --line:#5b4426; --accent:#2f6f4f; --bad:#b3402f; --card:#fffdf7; --edge:#d9d0bd; --blk:#1d1b18; --wht:#f4f1ea; --hot:#2f6f4f; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#1f1d19; --fg:#ece6d8; --muted:#a39b8a; --board:#b98f4a; --line:#3a2b14; --accent:#6fbf94; --bad:#e0705f; --card:#2a2721; --edge:#413c32; --blk:#0b0a09; --wht:#ece6d8; --hot:#6fbf94; } }
-  * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.5 system-ui,"Malgun Gothic",sans-serif; display:flex; justify-content:center; }
-  main { width:100%; max-width:1040px; padding:16px; display:grid; gap:16px; grid-template-columns:minmax(0,1fr); align-items:start; }
-  @media (min-width: 900px) { main { grid-template-columns:minmax(0,600px) minmax(0,1fr); } header, #loading { grid-column:1 / -1; } }
-  .col { display:flex; flex-direction:column; gap:12px; min-width:0; }
-  h1 { font-size:1.4rem; margin:0; letter-spacing:.02em; }
-  h2 { font-size:.95rem; margin:0 0 6px; }
-  #status { min-height:1.6em; font-weight:600; }
+  :root { --bg:#f5f1e8; --fg:#2a2620; --muted:#7a7366; --board:#e3b96a; --line:#5b4426; --accent:#2f6f4f; --accent-fg:#fff; --bad:#b3402f; --card:#fffdf7; --edge:#ddd4c1; --blk:#1d1b18; --wht:#f4f1ea; --bar:rgba(245,241,232,.94); }
+  @media (prefers-color-scheme: dark) { :root { --bg:#1b1916; --fg:#ece6d8; --muted:#a39b8a; --board:#b98f4a; --line:#3a2b14; --accent:#6fbf94; --accent-fg:#10261b; --bad:#e0705f; --card:#27241f; --edge:#3d382e; --blk:#0b0a09; --wht:#ece6d8; --bar:rgba(27,25,22,.94); } }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html { color-scheme:light dark; }
+  [hidden] { display:none !important; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.45 system-ui,"Malgun Gothic",sans-serif; }
+  button { font:inherit; color:inherit; background:none; border:0; padding:0; cursor:pointer; }
+  button:disabled { opacity:.4; cursor:default; }
+  .app { max-width:560px; margin:0 auto; padding:8px max(12px,env(safe-area-inset-left)) calc(84px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-right)); display:grid; gap:12px; }
+  .play, .side { display:flex; flex-direction:column; gap:10px; min-width:0; }
+  .side { display:none; }
+  .app.open .side { display:flex; }
+  header { display:flex; align-items:center; justify-content:space-between; }
+  h1 { font-size:1.15rem; margin:0; letter-spacing:.03em; }
+  .icon { width:44px; height:44px; display:grid; place-items:center; border-radius:12px; }
+  .icon svg, .bar svg { width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  #loading { display:flex; flex-direction:column; gap:4px; font-size:.85rem; color:var(--muted); }
+  progress { width:100%; height:8px; accent-color:var(--accent); }
+
+  .hud { display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:8px; }
+  .who { display:flex; align-items:center; gap:6px; font-weight:600; padding:6px 10px; border-radius:999px; border:2px solid transparent; }
+  .who.on { border-color:var(--accent); }
+  .stone { width:16px; height:16px; border-radius:50%; border:1px solid var(--muted); }
+  .stone.b { background:var(--blk); } .stone.w { background:var(--wht); }
+  #status { text-align:center; font-weight:600; font-size:.95rem; min-height:1.4em; }
   #status.win { color:var(--accent); } #status.lose { color:var(--bad); }
-  canvas { width:100%; aspect-ratio:1; touch-action:manipulation; border-radius:6px; background:var(--board); display:block; }
-  canvas#chart { aspect-ratio:5 / 1.3; background:var(--card); border:1px solid var(--edge); }
-  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-  button, select { font:inherit; padding:10px 14px; border-radius:8px; border:1px solid var(--muted); background:transparent; color:var(--fg); cursor:pointer; }
-  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
-  button:disabled { opacity:.45; cursor:default; }
-  .note { color:var(--muted); font-size:.85rem; }
-  progress { width:100%; }
-  .card { background:var(--card); border:1px solid var(--edge); border-radius:8px; padding:10px 12px; min-width:0; }
-  .bar { display:flex; height:26px; border-radius:6px; overflow:hidden; border:1px solid var(--edge); font-size:.8rem; font-weight:600; }
-  .bar div { display:flex; align-items:center; padding:0 8px; white-space:nowrap; overflow:hidden; transition:width .3s; }
-  .bar .b { background:var(--blk); color:#eee; } .bar .w { background:var(--wht); color:#222; justify-content:flex-end; }
-  table { width:100%; border-collapse:collapse; font-size:.82rem; font-variant-numeric:tabular-nums; }
-  th, td { text-align:right; padding:3px 4px; border-bottom:1px solid var(--edge); white-space:nowrap; }
-  th:first-child, td:first-child { text-align:left; } th { color:var(--muted); font-weight:500; }
+  .wr { display:flex; height:22px; border-radius:6px; overflow:hidden; border:1px solid var(--edge); font-size:.75rem; font-weight:700; font-variant-numeric:tabular-nums; }
+  .wr div { display:flex; align-items:center; padding:0 8px; overflow:hidden; white-space:nowrap; transition:width .3s; }
+  .wr .b { background:var(--blk); color:#eee; } .wr .w { background:var(--wht); color:#222; justify-content:flex-end; }
+  canvas#board { width:100%; aspect-ratio:1; display:block; border-radius:8px; background:var(--board); touch-action:manipulation; }
+  .chips { display:flex; gap:8px; }
+  .chip { flex:1; min-height:40px; border:1px solid var(--edge); border-radius:999px; font-size:.9rem; background:var(--card); }
+  .chip[aria-pressed=true] { background:var(--accent); border-color:var(--accent); color:var(--accent-fg); font-weight:600; }
+
+  .bar { position:fixed; left:0; right:0; bottom:0; display:flex; justify-content:center; gap:8px; padding:8px max(12px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left)); background:var(--bar); backdrop-filter:blur(8px); border-top:1px solid var(--edge); z-index:5; }
+  .bar button { flex:1; max-width:180px; min-height:52px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-size:.78rem; border-radius:12px; }
+  .bar button.main { background:var(--accent); color:var(--accent-fg); font-weight:700; }
+
+  .tabs { display:flex; background:var(--card); border:1px solid var(--edge); border-radius:12px; padding:3px; }
+  .tabs button { flex:1; min-height:40px; border-radius:9px; font-size:.9rem; }
+  .tabs button[aria-selected=true] { background:var(--accent); color:var(--accent-fg); font-weight:700; }
+  .card { background:var(--card); border:1px solid var(--edge); border-radius:12px; padding:10px 12px; min-width:0; }
+  .sub { display:flex; gap:6px; margin-bottom:8px; }
+  .sub button { padding:4px 12px; min-height:32px; border-radius:999px; border:1px solid var(--edge); font-size:.8rem; }
+  .sub button[aria-pressed=true] { border-color:var(--accent); color:var(--accent); font-weight:700; }
+  table { width:100%; border-collapse:collapse; font-size:.9rem; font-variant-numeric:tabular-nums; }
+  th, td { text-align:right; padding:7px 4px; border-bottom:1px solid var(--edge); white-space:nowrap; }
+  th:first-child, td:first-child { text-align:left; font-weight:700; } th { color:var(--muted); font-weight:500; font-size:.75rem; }
+  td.rp { text-align:left; color:var(--muted); font-size:.82rem; }
   .scroll { overflow-x:auto; }
-  .opts { display:flex; gap:12px; flex-wrap:wrap; font-size:.85rem; }
-  .opts label { display:flex; gap:4px; align-items:center; cursor:pointer; }
-  .pv { font-variant-numeric:tabular-nums; word-break:keep-all; }
-  .tag { display:inline-block; padding:0 6px; border-radius:4px; font-weight:600; font-size:.8rem; border:1px solid currentColor; }
-  footer { grid-column:1 / -1; color:var(--muted); font-size:.85rem; border-top:1px solid var(--edge); padding-top:10px; }
+  .pv { margin:8px 0 0; font-size:.9rem; } .pv b { color:var(--muted); font-weight:500; font-size:.75rem; display:block; }
+  .m { color:var(--muted); font-size:.78rem; margin:6px 0 0; }
+  .grade { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  .grade .tag { font-size:1.25rem; font-weight:800; } .good { color:var(--accent); } .bad { color:var(--bad); }
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:10px; text-align:center; }
+  .stats div { background:var(--bg); border-radius:8px; padding:6px 2px; font-size:.72rem; color:var(--muted); } .stats b { display:block; font-size:1.1rem; color:var(--fg); }
+  .empty { color:var(--muted); font-size:.9rem; padding:6px 0; }
+  canvas#chart { width:100%; aspect-ratio:5 / 2; display:block; }
+
+  dialog { border:0; border-radius:18px; padding:0; background:var(--card); color:var(--fg); width:min(92vw,420px); }
+  dialog::backdrop { background:rgba(0,0,0,.5); }
+  .dlg { padding:16px; display:flex; flex-direction:column; gap:14px; }
+  .dlg h2 { margin:0; font-size:1.05rem; }
+  .big { min-height:56px; border-radius:14px; border:1px solid var(--edge); font-weight:700; display:flex; align-items:center; justify-content:center; gap:10px; }
+  .big.p { background:var(--accent); color:var(--accent-fg); border-color:var(--accent); }
+  .seg { display:flex; border:1px solid var(--edge); border-radius:12px; overflow:hidden; }
+  .seg button { flex:1; min-height:44px; font-size:.9rem; } .seg button[aria-pressed=true] { background:var(--accent); color:var(--accent-fg); font-weight:700; }
+  .set { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:44px; }
+  .set label { font-weight:600; } .set small { display:block; color:var(--muted); font-weight:400; }
+  input[type=checkbox] { width:46px; height:28px; appearance:none; background:var(--edge); border-radius:999px; position:relative; transition:.2s; flex:none; }
+  input[type=checkbox]::after { content:""; position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%; background:#fff; transition:.2s; }
+  input[type=checkbox]:checked { background:var(--accent); } input[type=checkbox]:checked::after { left:21px; }
+  details { font-size:.85rem; color:var(--muted); } summary { cursor:pointer; min-height:32px; }
+  .close { align-self:flex-end; padding:8px 16px; border-radius:10px; border:1px solid var(--edge); min-height:44px; }
+  footer { text-align:center; color:var(--muted); font-size:.75rem; }
   footer a { color:inherit; }
-  .good { color:var(--accent); } .bad { color:var(--bad); }
+
+  @media (min-width:900px) {
+    .app { max-width:1040px; grid-template-columns:minmax(0,560px) minmax(0,1fr); align-items:start; padding-bottom:24px; }
+    .side { display:flex; position:sticky; top:8px; }
+    .bar { position:static; background:none; border:0; backdrop-filter:none; padding:0; justify-content:flex-start; }
+    .bar button { max-width:none; flex-direction:row; gap:8px; min-height:48px; border:1px solid var(--edge); font-size:.9rem; }
+    .bar button.main { border-color:var(--accent); }
+    #btnAn { display:none; }
+    header, #loading, footer { grid-column:1 / -1; }
+  }
 </style>
 </head>
 <body>
-<main>
-  <header><h1>SBS-B1</h1></header>
-  <div id="loading"><div id="loadtext" class="note">엔진을 불러오는 중입니다 (약 90MB, 처음 한 번만)</div><progress id="bar" max="100" value="0"></progress></div>
-  <div class="col">
-    <div id="status">&nbsp;</div>
-    <canvas id="board" width="600" height="600" aria-label="렌주 바둑판"></canvas>
-    <div class="row">
-      <button id="newBlack" class="primary" disabled>내가 흑 (선공)</button>
-      <button id="newWhite" disabled>내가 백 (후공)</button>
-      <button id="undo" disabled>한 수 무르기</button>
-      <select id="level" aria-label="B1의 생각 시간">
-        <option value="500">빠름 (0.5초)</option>
-        <option value="2000" selected>보통 (2초)</option>
-        <option value="6000">강함 (6초)</option>
-      </select>
+<div class="app" id="app">
+  <header>
+    <h1>SBS-B1</h1>
+    <button class="icon" id="btnSet" aria-label="설정"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h0a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5h0a1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v0a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </header>
+  <div id="loading"><span id="loadtext">엔진 불러오는 중 (약 90MB, 처음 한 번)</span><progress id="bar" max="100" value="0"></progress></div>
+
+  <section class="play">
+    <div class="hud">
+      <div class="who" id="whoMe"><span class="stone b" id="stMe"></span>나</div>
+      <div id="status">&nbsp;</div>
+      <div class="who" id="whoAi">B1<span class="stone w" id="stAi"></span></div>
     </div>
-    <div class="opts">
-      <label><input type="checkbox" id="optAn" checked> 분석 켜기</label>
-      <label><input type="checkbox" id="optCand"> 후보 수 표시</label>
-      <label><input type="checkbox" id="optPv"> 예상 수순 표시</label>
-      <label><input type="checkbox" id="optHeat"> 정책 히트맵</label>
+    <div class="wr"><div class="b" id="wrB" style="width:50%">50%</div><div class="w" id="wrW" style="width:50%">50%</div></div>
+    <canvas id="board" width="720" height="720" aria-label="렌주 바둑판"></canvas>
+    <div class="chips" role="group" aria-label="보드 표시">
+      <button class="chip" id="optCand" aria-pressed="false">후보</button>
+      <button class="chip" id="optPv" aria-pressed="false">수순</button>
+      <button class="chip" id="optHeat" aria-pressed="false">히트맵</button>
     </div>
-    <p class="note">렌주 규칙: 흑은 3-3, 4-4, 6목 이상이 금지이고 정확히 5목이면 이깁니다. 백은 5목 이상이면 이깁니다. 흑 차례에 금지된 칸은 ✕로 표시됩니다.</p>
-  </div>
-  <div class="col" id="panel">
-    <div class="card">
-      <h2>평가 승률 <span class="note" id="wrNote"></span></h2>
-      <div class="bar"><div class="b" id="wrB" style="width:50%">흑 50%</div><div class="w" id="wrW" style="width:50%">백 50%</div></div>
-      <canvas id="chart" width="600" height="156" aria-label="수순별 흑 평가 승률"></canvas>
-      <p class="note" style="margin:6px 0 0">값망 출력과 탐색 결과를 승률처럼 바꾼 값입니다. 보정된 실제 승률은 아닙니다.</p>
+    <nav class="bar" aria-label="메뉴">
+      <button class="main" id="btnNew"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>새 게임</button>
+      <button id="undo" disabled><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>무르기</button>
+      <button id="btnAn"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>분석</button>
+    </nav>
+  </section>
+
+  <section class="side" id="side">
+    <div class="tabs" role="tablist">
+      <button role="tab" data-tab="cand" aria-selected="true">후보</button>
+      <button role="tab" data-tab="mine" aria-selected="false">내 수</button>
+      <button role="tab" data-tab="flow" aria-selected="false">흐름</button>
     </div>
-    <div class="card" id="mine"><h2>내 수 평가</h2><div id="mineBody" class="note">아직 두지 않았습니다.</div></div>
-    <div class="card"><h2 id="curTitle">지금 국면</h2><div id="cur" class="note">분석을 기다리는 중…</div></div>
-    <div class="card" id="prevCard" hidden><h2 id="prevTitle">B1이 직전에 본 수</h2><div id="prev"></div></div>
-  </div>
-  <footer>개발자: 임태우 · <a href="mailto:eight@sbs.co.kr">eight@sbs.co.kr</a></footer>
-</main>
+    <div class="card" id="tab-cand">
+      <div class="sub" id="candSub" hidden><button id="vCur" aria-pressed="true">지금</button><button id="vPrev" aria-pressed="false">B1이 본 수</button></div>
+      <div id="cur" class="empty">분석 중…</div>
+    </div>
+    <div class="card" id="tab-mine" hidden><div id="mineBody" class="empty">두 수가 쌓이면 표시됩니다.</div></div>
+    <div class="card" id="tab-flow" hidden><canvas id="chart" width="600" height="240" aria-label="수순별 흑 승률"></canvas><p class="m">값망 평가를 승률처럼 바꾼 값입니다 (보정 전).</p></div>
+  </section>
+  <footer>임태우 · <a href="mailto:eight@sbs.co.kr">eight@sbs.co.kr</a></footer>
+</div>
+
+<dialog id="dlgNew"><div class="dlg"><h2>새 게임</h2>
+  <button class="big p" id="newBlack"><span class="stone b"></span>흑으로 시작 (선공)</button>
+  <button class="big" id="newWhite"><span class="stone w"></span>백으로 시작 (후공)</button>
+  <button class="close" data-close>닫기</button></div></dialog>
+
+<dialog id="dlgSet"><div class="dlg"><h2>설정</h2>
+  <div><div class="set"><label>B1 생각 시간</label></div>
+    <div class="seg" id="level"><button data-ms="500" aria-pressed="false">빠름 0.5초</button><button data-ms="2000" aria-pressed="true">보통 2초</button><button data-ms="6000" aria-pressed="false">강함 6초</button></div></div>
+  <div class="set"><label for="optAn">분석<small>후보·승률 계산</small></label><input type="checkbox" id="optAn" checked></div>
+  <div class="set"><label for="optConfirm">두 번 탭해서 두기<small>잘못 누름 방지</small></label><input type="checkbox" id="optConfirm"></div>
+  <details><summary>렌주 규칙</summary>흑은 3-3, 4-4, 6목 이상 금지(✕ 표시), 정확히 5목이면 승리. 백은 5목 이상이면 승리.</details>
+  <button class="close" data-close>닫기</button></div></dialog>
+
 <script>
 const N = 15, cv = document.getElementById('board'), ctx = cv.getContext('2d');
 const $ = (id) => document.getElementById(id);
-let worker, ready = false, board = new Array(N * N).fill(0), moves = [], human = 1, over = false, thinking = false, fb = new Array(N * N).fill(0), reqId = 0, last = -1;
+let worker, ready = false, board = new Array(N * N).fill(0), moves = [], human = 1, over = false, thinking = false, fb = new Array(N * N).fill(0), reqId = 0, last = -1, pending = -1;
 let an = {};  // 둔 수 개수(ply) -> 그 국면의 분석
+let tab = 'cand', candView = 'cur', levelMs = 2000, flashTimer = 0;
 const colorOf = (i) => (i % 2 === 0 ? 1 : 2); // 수 번호 i(0부터)의 색: 흑 먼저
 const lab = (a) => 'ABCDEFGHIJKLMNO'[a % N] + (N - ((a / N) | 0));
 const pct = (x) => Math.round(x * 100) + '%';
 const sigOf = (n) => moves.slice(0, n).join(',');
+const store = { get(k, d) { try { const v = localStorage.getItem('sbsb1.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('sbsb1.' + k, JSON.stringify(v)); } catch (e) {} } };
+const pressed = (id) => $(id).getAttribute('aria-pressed') === 'true';
 
 function setStatus(t, cls) { const s = $('status'); s.textContent = t; s.className = cls || ''; }
+function flash(t) { setStatus(t, 'lose'); clearTimeout(flashTimer); flashTimer = setTimeout(turnStatus, 1400); }
+function turnStatus() {
+  if (!ready) return setStatus('불러오는 중…');
+  if (over) return;
+  setStatus(thinking ? 'B1 생각 중…' : toMove() === human ? '내 차례' : '');
+}
 
 function winAt(b, idx, color) {
   const r = (idx / N) | 0, c = idx % N;
@@ -111,15 +192,16 @@ function draw() {
   ctx.clearRect(0, 0, W, W);
   const css = getComputedStyle(document.documentElement);
   ctx.fillStyle = css.getPropertyValue('--board'); ctx.fillRect(0, 0, W, W);
-  ctx.strokeStyle = css.getPropertyValue('--line'); ctx.lineWidth = 1.2;
+  ctx.strokeStyle = css.getPropertyValue('--line'); ctx.lineWidth = 1.4;
   for (let i = 0; i < N; i++) { ctx.beginPath(); ctx.moveTo(g(0), g(i)); ctx.lineTo(g(N - 1), g(i)); ctx.moveTo(g(i), g(0)); ctx.lineTo(g(i), g(N - 1)); ctx.stroke(); }
   ctx.fillStyle = css.getPropertyValue('--line');
-  for (const [r, c] of [[3, 3], [3, 11], [11, 3], [11, 11], [7, 7]]) { ctx.beginPath(); ctx.arc(g(c), g(r), m * 0.09, 0, 7); ctx.fill(); }
-  ctx.font = Math.round(m * 0.3) + 'px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = css.getPropertyValue('--line');
+  for (const [r, c] of [[3, 3], [3, 11], [11, 3], [11, 11], [7, 7]]) { ctx.beginPath(); ctx.arc(g(c), g(r), m * 0.1, 0, 7); ctx.fill(); }
+  ctx.font = Math.round(m * 0.3) + 'px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.globalAlpha = .7;
   for (let i = 0; i < N; i++) { ctx.fillText('ABCDEFGHIJKLMNO'[i], g(i), m * 0.42); ctx.fillText(String(N - i), m * 0.4, g(i)); }
-  const rad = m * 0.44, cur = curAn(), showing = !over && !thinking && cur;
+  ctx.globalAlpha = 1;
+  const rad = m * 0.45, cur = curAn(), showing = !over && !thinking && cur;
   const xy = (i) => [g(i % N), g((i / N) | 0)];
-  if (showing && $('optHeat').checked) {
+  if (showing && pressed('optHeat')) {
     const p = cur.base.policy, mx = Math.max(...p);
     ctx.fillStyle = '#2f6f4f';
     for (let i = 0; i < N * N; i++) if (p[i] > 0.004 && !board[i]) { const [x, y] = xy(i); ctx.globalAlpha = 0.15 + 0.7 * (p[i] / mx); ctx.beginPath(); ctx.arc(x, y, m * (0.12 + 0.3 * Math.sqrt(p[i] / mx)), 0, 7); ctx.fill(); }
@@ -133,104 +215,99 @@ function draw() {
     ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, rad, 0, 7); ctx.fill();
     if (board[i] === 2) { ctx.strokeStyle = '#8a8478'; ctx.lineWidth = 1; ctx.stroke(); }
   }
-  if (last >= 0) { const [x, y] = xy(last); ctx.strokeStyle = '#d6402f'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y, rad * 0.45, 0, 7); ctx.stroke(); }
-  if (showing && $('optPv').checked && cur.pv.length) {  // 예상 수순: 반투명 돌 + 번호
+  if (last >= 0) { const [x, y] = xy(last); ctx.strokeStyle = '#d6402f'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(x, y, rad * 0.45, 0, 7); ctx.stroke(); }
+  if (showing && pressed('optPv') && cur.pv.length) {  // 예상 수순: 반투명 돌 + 번호
     cur.pv.forEach((a, k) => {
       const [x, y] = xy(a), col = (cur.toMove === 1) === (k % 2 === 0) ? 1 : 2;
-      ctx.globalAlpha = 0.72; ctx.fillStyle = col === 1 ? '#111' : '#fff'; ctx.beginPath(); ctx.arc(x, y, rad * 0.85, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
-      ctx.strokeStyle = '#2f6f4f'; ctx.lineWidth = 2; ctx.stroke();
-      ctx.fillStyle = col === 1 ? '#fff' : '#111'; ctx.font = 'bold ' + Math.round(m * 0.36) + 'px system-ui'; ctx.fillText(String(k + 1), x, y + 1);
+      ctx.globalAlpha = 0.75; ctx.fillStyle = col === 1 ? '#111' : '#fff'; ctx.beginPath(); ctx.arc(x, y, rad * 0.85, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#2f6f4f'; ctx.lineWidth = 2.5; ctx.stroke();
+      ctx.fillStyle = col === 1 ? '#fff' : '#111'; ctx.font = 'bold ' + Math.round(m * 0.38) + 'px system-ui'; ctx.fillText(String(k + 1), x, y + 1);
     });
   }
-  if (showing && $('optCand').checked) {  // 후보 수 1~3위
+  if (showing && pressed('optCand')) {  // 후보 수 1~3위
     cur.cands.slice(0, 3).forEach((c, k) => {
       const [x, y] = xy(c.a);
-      ctx.strokeStyle = ['#e0a000', '#5aa469', '#6a8fc9'][k]; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.arc(x, y, rad * 0.8, 0, 7); ctx.stroke();
-      ctx.fillStyle = ctx.strokeStyle; ctx.font = 'bold ' + Math.round(m * 0.32) + 'px system-ui'; ctx.fillText(String(k + 1), x, y + 1);
+      ctx.strokeStyle = ['#e0a000', '#3f8f55', '#4f7fc9'][k]; ctx.lineWidth = 4.5; ctx.beginPath(); ctx.arc(x, y, rad * 0.8, 0, 7); ctx.stroke();
+      ctx.fillStyle = ctx.strokeStyle; ctx.font = 'bold ' + Math.round(m * 0.34) + 'px system-ui'; ctx.fillText(String(k + 1), x, y + 1);
     });
   }
   if (!over && !thinking && human === 1 && colorOf(moves.length) === 1) {
-    ctx.strokeStyle = css.getPropertyValue('--bad'); ctx.lineWidth = 3;
+    ctx.strokeStyle = css.getPropertyValue('--bad'); ctx.lineWidth = 3.5;
     for (let i = 0; i < N * N; i++) if (fb[i] && !board[i]) { const [x, y] = xy(i), d = m * .2; ctx.beginPath(); ctx.moveTo(x - d, y - d); ctx.lineTo(x + d, y + d); ctx.moveTo(x + d, y - d); ctx.lineTo(x - d, y + d); ctx.stroke(); }
+  }
+  if (pending >= 0 && !over && !thinking) {  // 두 번 탭 모드: 선택한 자리에 반투명 돌과 붉은 테두리
+    const [x, y] = xy(pending), c = human === 1;
+    ctx.globalAlpha = .55; ctx.fillStyle = c ? '#111' : '#fff'; ctx.beginPath(); ctx.arc(x, y, rad, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = '#d6402f'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(x, y, rad * 1.12, 0, 7); ctx.stroke();
   }
 }
 
 function drawChart() {
   const c = $('chart'), x = c.getContext('2d'), W = c.width, H = c.height, css = getComputedStyle(document.documentElement);
-  x.clearRect(0, 0, W, H); x.fillStyle = css.getPropertyValue('--card'); x.fillRect(0, 0, W, H);
-  const L = 34, R = 8, T = 8, B = 8, px = (p) => L + (W - L - R) * Math.min(p / Math.max(moves.length, 20), 1), py = (w) => T + (H - T - B) * (1 - w);
-  x.font = '11px system-ui'; x.fillStyle = css.getPropertyValue('--muted'); x.textAlign = 'right'; x.textBaseline = 'middle';
-  for (const w of [0, 0.5, 1]) { x.strokeStyle = css.getPropertyValue('--edge'); x.lineWidth = w === 0.5 ? 1.5 : 1; x.beginPath(); x.moveTo(L, py(w)); x.lineTo(W - R, py(w)); x.stroke(); x.fillText(pct(w), L - 4, py(w)); }
-  const pts = Object.keys(an).map(Number).filter((p) => p <= moves.length).sort((a, b) => a - b).map((p) => [px(p), py(blackWr(an[p])), p]);
+  x.clearRect(0, 0, W, H);
+  const L = 44, R = 10, T = 10, B = 10, px = (p) => L + (W - L - R) * Math.min(p / Math.max(moves.length, 20), 1), py = (w) => T + (H - T - B) * (1 - w);
+  x.font = '16px system-ui'; x.fillStyle = css.getPropertyValue('--muted'); x.textAlign = 'right'; x.textBaseline = 'middle';
+  for (const w of [0, 0.5, 1]) { x.strokeStyle = css.getPropertyValue('--edge'); x.lineWidth = w === 0.5 ? 2 : 1; x.beginPath(); x.moveTo(L, py(w)); x.lineTo(W - R, py(w)); x.stroke(); x.fillText(pct(w), L - 6, py(w)); }
+  const pts = Object.keys(an).map(Number).filter((p) => p <= moves.length).sort((a, b) => a - b).map((p) => [px(p), py(blackWr(an[p]))]);
   if (!pts.length) return;
-  x.strokeStyle = css.getPropertyValue('--accent'); x.lineWidth = 2; x.beginPath(); pts.forEach((q, i) => (i ? x.lineTo(q[0], q[1]) : x.moveTo(q[0], q[1]))); x.stroke();
-  x.fillStyle = css.getPropertyValue('--accent'); for (const q of pts) { x.beginPath(); x.arc(q[0], q[1], 3, 0, 7); x.fill(); }
+  x.strokeStyle = css.getPropertyValue('--accent'); x.lineWidth = 3; x.beginPath(); pts.forEach((q, i) => (i ? x.lineTo(q[0], q[1]) : x.moveTo(q[0], q[1]))); x.stroke();
+  x.fillStyle = css.getPropertyValue('--accent'); for (const q of pts) { x.beginPath(); x.arc(q[0], q[1], 4, 0, 7); x.fill(); }
 }
 
-function table(a, withReply) {
-  if (!a.cands.length) return '<div class="note">후보가 없습니다.</div>';
-  const who = a.toMove === 1 ? '흑' : '백';
-  let h = '<div class="scroll"><table><tr><th>' + who + ' 후보</th><th>방문</th><th>승률</th><th>정책</th>' + (withReply ? '<th>예상 응수</th>' : '') + '</tr>';
+function table(a) {
+  if (!a.cands.length) return '<div class="empty">후보가 없습니다.</div>';
+  let h = '<div class="scroll"><table><tr><th>' + (a.toMove === 1 ? '흑' : '백') + ' 후보</th><th>승률</th><th>방문</th><th style="text-align:left">예상 응수</th></tr>';
   a.cands.forEach((c, k) => {
-    h += '<tr><td>' + (k + 1) + '. ' + lab(c.a) + '</td><td>' + pct(c.visits / a.evals) + '</td><td>' + pct((c.q + 1) / 2) + '</td><td>' + pct(c.prior) + '</td>';
-    if (withReply) h += '<td>' + (c.win ? '5목 완성' : c.replies.map((r) => lab(r.a) + ' ' + pct(r.p)).join(' · ')) + '</td>';
-    h += '</tr>';
+    h += '<tr><td>' + (k + 1) + ' ' + lab(c.a) + '</td><td>' + pct((c.q + 1) / 2) + '</td><td>' + pct(c.visits / a.evals) + '</td><td class="rp">' + (c.win ? '5목 완성' : c.replies.slice(0, 2).map((r) => lab(r.a) + ' ' + pct(r.p)).join(' · ')) + '</td></tr>';
   });
   return h + '</table></div>';
 }
-function pvText(a) { return a.pv.length ? a.pv.map((p, k) => ((a.toMove === 1) === (k % 2 === 0) ? '●' : '○') + lab(p)).join(' → ') : '-'; }
-function meta(a) { return '<p class="note" style="margin:6px 0 0">탐색 ' + a.evals.toLocaleString() + '회 · 최대 깊이 ' + a.depth + ' · ' + (a.ms / 1000).toFixed(1) + '초</p>'; }
+function pvText(a) { return a.pv.length ? a.pv.map((p, k) => ((a.toMove === 1) === (k % 2 === 0) ? '●' : '○') + lab(p)).join(' ') : '-'; }
+function candHtml(a) { return table(a) + '<p class="pv"><b>예상 수순</b>' + pvText(a) + '</p><p class="m">탐색 ' + a.evals.toLocaleString() + '회 · 깊이 ' + a.depth + '</p>'; }
 
 // 사람이 둔 수 i의 평가: 두기 전 "내 최선" 평가(분석 i)와, 둔 뒤 B1이 본 평가(분석 i+1)를 비교한다.
 function moveEval(i) {
   const a0 = an[i], a1 = an[i + 1];
   if (!a0 || !a1 || sigOf(i) !== a0.sig || a1.sig !== sigOf(i + 1)) return null;
-  const q0 = qOf(a0), q1 = -qOf(a1), delta = (q1 - q0) / 2;  // 승률 변화(퍼센트포인트/100)
-  const rank = a0.cands.findIndex((c) => c.a === moves[i]);
-  return { delta, rank, wr0: (q0 + 1) / 2, wr1: (q1 + 1) / 2 };
+  const q0 = qOf(a0), q1 = -qOf(a1), delta = (q1 - q0) / 2;  // 승률 변화(0~1 단위)
+  return { delta, rank: a0.cands.findIndex((c) => c.a === moves[i]), wr0: (q0 + 1) / 2, wr1: (q1 + 1) / 2 };
 }
-function grade(d) { return d >= -0.03 ? ['좋은 수', 'good'] : d >= -0.10 ? ['무난한 수', ''] : d >= -0.25 ? ['아쉬운 수', 'bad'] : ['큰 실수', 'bad']; }
+function grade(d) { return d >= -0.03 ? ['좋은 수', 'good'] : d >= -0.10 ? ['무난', ''] : d >= -0.25 ? ['아쉬움', 'bad'] : ['큰 실수', 'bad']; }
 
 function renderPanel() {
-  const cur = curAn(), back = (() => { for (let p = moves.length; p >= 0; p--) if (an[p] && sigOf(p) === an[p].sig) return an[p]; return null; })();
-  const a = back;
-  if (a) {
-    const w = blackWr(a);
-    $('wrB').style.width = pct(w); $('wrW').style.width = pct(1 - w); $('wrB').textContent = '흑 ' + pct(w); $('wrW').textContent = '백 ' + pct(1 - w);
-    $('wrNote').textContent = a.ply === moves.length ? '' : '(' + a.ply + '수 시점)';
-  }
-  drawChart();
-  // 내 수 평가
-  const hi = []; for (let i = 0; i < moves.length; i++) if (colorOf(i) === human) hi.push(i);
-  let ev = [], mineHtml = '';
-  for (const i of hi) { const e = moveEval(i); if (e) ev.push({ i, ...e }); }
+  let a = null;
+  for (let p = moves.length; p >= 0; p--) if (an[p] && sigOf(p) === an[p].sig) { a = an[p]; break; }
+  if (a) { const w = blackWr(a); $('wrB').style.width = pct(w); $('wrW').style.width = pct(1 - w); $('wrB').textContent = pct(w); $('wrW').textContent = pct(1 - w); }
+  $('whoMe').classList.toggle('on', !over && toMove() === human); $('whoAi').classList.toggle('on', !over && toMove() !== human);
+  $('stMe').className = 'stone ' + (human === 1 ? 'b' : 'w'); $('stAi').className = 'stone ' + (human === 1 ? 'w' : 'b');
+  if (tab === 'flow') drawChart();
+  // 내 수
+  const ev = [];
+  for (let i = 0; i < moves.length; i++) if (colorOf(i) === human) { const e = moveEval(i); if (e) ev.push({ i, ...e }); }
   if (ev.length) {
-    const l = ev[ev.length - 1], [g, cls] = grade(l.delta);
-    mineHtml = '마지막 수 <b>' + lab(moves[l.i]) + '</b>: <span class="tag ' + cls + '">' + g + '</span> 승률 ' + pct(l.wr0) + ' → ' + pct(l.wr1) + ' (' + (l.delta >= 0 ? '+' : '') + Math.round(l.delta * 100) + '%p), ' + (l.rank >= 0 ? 'B1 후보 ' + (l.rank + 1) + '위' : 'B1 후보 밖') + '<br>';
-    const cnt = [0, 0, 0, 0]; for (const e of ev) { const d = e.delta; cnt[d >= -0.03 ? 0 : d >= -0.10 ? 1 : d >= -0.25 ? 2 : 3]++; }
-    mineHtml += '<span class="note">전체 ' + ev.length + '수: 좋은 ' + cnt[0] + ' · 무난 ' + cnt[1] + ' · 아쉬움 ' + cnt[2] + ' · 큰 실수 ' + cnt[3] + ' (임의 기준: 승률 −3%p 이내 좋음, −10 무난, −25 아쉬움)</span>';
-  } else mineHtml = '<span class="note">두 수가 쌓이면 표시됩니다. 분석이 켜져 있어야 합니다.</span>';
-  // 예상 응수 적중
-  let tot = 0, h1 = 0, h3 = 0;
-  for (let i = 0; i + 1 < moves.length; i++) {
-    if (colorOf(i) === human) continue;
-    const b = an[i]; if (!b || b.sig !== sigOf(i)) continue;
-    const c = b.cands.find((x) => x.a === moves[i]); if (!c || !c.replies.length) continue;
-    tot++; if (moves[i + 1] === c.replies[0].a) h1++; if (c.replies.some((r) => r.a === moves[i + 1])) h3++;
-  }
-  if (tot) mineHtml += '<br><span class="note">B1의 예상 응수가 맞은 횟수: 1순위 ' + h1 + '/' + tot + ', 상위 3수 안 ' + h3 + '/' + tot + '</span>';
-  $('mineBody').innerHTML = mineHtml; $('mineBody').className = '';
-  // 지금 국면
-  if (cur && sigOf(moves.length) === cur.sig) {
-    $('curTitle').textContent = (cur.toMove === human ? '지금 국면 · 당신 차례' : '지금 국면 · B1 차례');
-    $('cur').className = ''; $('cur').innerHTML = table(cur, true) + '<p class="pv" style="margin:6px 0 0"><b>예상 수순</b> ' + pvText(cur) + '</p>' + meta(cur);
-  } else { $('cur').className = 'note'; $('cur').textContent = over ? '대국이 끝났습니다.' : ($('optAn').checked ? (thinking ? 'B1이 생각 중입니다.' : '분석 중…') : '분석이 꺼져 있습니다.'); }
-  // B1이 직전에 둔 수의 분석
-  const p = moves.length - 1, pa = an[p];
-  if (p >= 0 && colorOf(p) !== human && pa && pa.sig === sigOf(p)) {
-    $('prevCard').hidden = false; $('prevTitle').textContent = 'B1이 직전에 본 수 (' + p + '수 시점)';
-    $('prev').innerHTML = table(pa, true) + '<p class="pv" style="margin:6px 0 0"><b>예상 수순</b> ' + pvText(pa) + '</p>' + meta(pa);
-  } else $('prevCard').hidden = true;
+    const l = ev[ev.length - 1], [g, cls] = grade(l.delta), cnt = [0, 0, 0, 0];
+    for (const e of ev) cnt[e.delta >= -0.03 ? 0 : e.delta >= -0.10 ? 1 : e.delta >= -0.25 ? 2 : 3]++;
+    let tot = 0, h1 = 0, h3 = 0;
+    for (let i = 0; i + 1 < moves.length; i++) {
+      if (colorOf(i) === human) continue;
+      const b = an[i]; if (!b || b.sig !== sigOf(i)) continue;
+      const c = b.cands.find((x) => x.a === moves[i]); if (!c || !c.replies.length) continue;
+      tot++; if (moves[i + 1] === c.replies[0].a) h1++; if (c.replies.some((r) => r.a === moves[i + 1])) h3++;
+    }
+    $('mineBody').className = '';
+    $('mineBody').innerHTML = '<div class="grade"><span class="tag ' + cls + '">' + g + '</span><span>' + lab(moves[l.i]) + ' · 승률 ' + pct(l.wr0) + ' → ' + pct(l.wr1) + ' (' + (l.delta >= 0 ? '+' : '') + Math.round(l.delta * 100) + '%p)</span></div>' +
+      '<div class="m">' + (l.rank >= 0 ? 'B1 후보 ' + (l.rank + 1) + '위' : 'B1 후보 밖') + '</div>' +
+      '<div class="stats"><div><b>' + cnt[0] + '</b>좋은 수</div><div><b>' + cnt[1] + '</b>무난</div><div><b>' + cnt[2] + '</b>아쉬움</div><div><b>' + cnt[3] + '</b>큰 실수</div></div>' +
+      (tot ? '<p class="m">B1 예상 응수 적중: 1순위 ' + h1 + '/' + tot + ' · 상위3 ' + h3 + '/' + tot + '</p>' : '');
+  } else { $('mineBody').className = 'empty'; $('mineBody').textContent = !$('optAn').checked ? '분석이 꺼져 있습니다.' : '두 수가 쌓이면 표시됩니다.'; }
+  // 후보: 지금 국면 / B1이 직전에 본 수
+  const cur = curAn(), p = moves.length - 1, pa = an[p], hasPrev = p >= 0 && colorOf(p) !== human && pa && pa.sig === sigOf(p);
+  $('candSub').hidden = !hasPrev;
+  if (!hasPrev) candView = 'cur';
+  $('vCur').setAttribute('aria-pressed', candView === 'cur'); $('vPrev').setAttribute('aria-pressed', candView === 'prev');
+  if (candView === 'prev' && hasPrev) { $('cur').className = ''; $('cur').innerHTML = candHtml(pa); }
+  else if (cur) { $('cur').className = ''; $('cur').innerHTML = candHtml(cur); }
+  else { $('cur').className = 'empty'; $('cur').textContent = over ? '대국이 끝났습니다.' : !$('optAn').checked ? '분석이 꺼져 있습니다.' : thinking ? 'B1이 생각 중입니다.' : '분석 중…'; }
 }
 
 function toMove() { return colorOf(moves.length); }
@@ -238,35 +315,29 @@ function refresh() { draw(); renderPanel(); }
 
 function afterMove() {
   const idx = moves[moves.length - 1], color = colorOf(moves.length - 1);
-  if (winAt(board, idx, color)) { over = true; setStatus(color === human ? '이겼습니다! 🎉' : 'B1이 이겼습니다.', color === human ? 'win' : 'lose'); refresh(); updateButtons(); return; }
-  if (moves.length === N * N) { over = true; setStatus('비겼습니다.'); refresh(); updateButtons(); return; }
+  if (winAt(board, idx, color)) { over = true; setStatus(color === human ? '이겼습니다! 🎉' : 'B1 승리', color === human ? 'win' : 'lose'); refresh(); updateButtons(); return; }
+  if (moves.length === N * N) { over = true; setStatus('무승부'); refresh(); updateButtons(); return; }
   next();
 }
 
 function next() {
-  refresh(); updateButtons();
-  if (over || !ready) return;
+  pending = -1; refresh(); updateButtons();
+  if (over || !ready) return turnStatus();
   const an_on = $('optAn').checked, ply = moves.length, req = { board, toMove: toMove(), ply, sig: sigOf(ply), analyze: an_on };
   if (toMove() === human) {
-    setStatus('당신 차례입니다 (' + (human === 1 ? '흑' : '백') + ')' + (moves.length && colorOf(moves.length - 1) !== human ? ' · B1: ' + lab(last) : ''));
+    turnStatus();
     if (human === 1) { const id = ++reqId; worker.postMessage({ type: 'forbidden', id, board, toMove: 1 }); }
     if (an_on && !(an[ply] && an[ply].sig === req.sig)) worker.postMessage({ type: 'hint', ms: 800, ...req });
   } else {
-    thinking = true; updateButtons(); setStatus('B1이 생각하는 중…');
-    const id = ++reqId; worker.postMessage({ type: 'search', id, ms: +$('level').value, ...req });
+    thinking = true; updateButtons(); turnStatus();
+    const id = ++reqId; worker.postMessage({ type: 'search', id, ms: levelMs, ...req });
   }
 }
 
-function place(idx) { board[idx] = colorOf(moves.length); moves.push(idx); last = idx; fb = new Array(N * N).fill(0); afterMove(); }
-
+function place(idx) { board[idx] = colorOf(moves.length); moves.push(idx); last = idx; pending = -1; fb = new Array(N * N).fill(0); afterMove(); }
 function canUndo() { return moves.some((_, i) => colorOf(i) === human); }
-
-function updateButtons() {
-  $('newBlack').disabled = $('newWhite').disabled = !ready;
-  $('undo').disabled = !ready || thinking || !canUndo();
-}
-
-function newGame(h) { reqId++; human = h; board = new Array(N * N).fill(0); moves = []; an = {}; over = false; thinking = false; last = -1; fb = new Array(N * N).fill(0); next(); }
+function updateButtons() { $('undo').disabled = !ready || thinking || !canUndo(); }
+function newGame(h) { reqId++; human = h; board = new Array(N * N).fill(0); moves = []; an = {}; over = false; thinking = false; last = -1; pending = -1; candView = 'cur'; fb = new Array(N * N).fill(0); next(); }
 
 cv.addEventListener('click', (e) => {
   if (!ready || over || thinking || toMove() !== human) return;
@@ -275,12 +346,18 @@ cv.addEventListener('click', (e) => {
   if (r < 0 || r >= N || c < 0 || c >= N) return;
   const idx = r * N + c;
   if (board[idx]) return;
-  if (human === 1 && fb[idx]) { setStatus('금지된 자리입니다 (✕). 다른 곳에 두세요.', 'lose'); return; }
-  place(idx);
+  if (human === 1 && fb[idx]) { pending = -1; draw(); flash('금지 자리입니다'); return; }
+  if (!$('optConfirm').checked || pending === idx) return place(idx);
+  pending = idx; draw();
 });
 
-$('newBlack').onclick = () => newGame(1);
-$('newWhite').onclick = () => newGame(2);
+// 대화상자, 탭, 토글
+const dlg = (id) => { const d = $(id); if (!d.open) d.showModal(); };
+for (const d of document.querySelectorAll('dialog')) { d.addEventListener('click', (e) => { if (e.target === d || e.target.hasAttribute('data-close')) d.close(); }); }
+$('btnNew').onclick = () => dlg('dlgNew');
+$('btnSet').onclick = () => dlg('dlgSet');
+$('newBlack').onclick = () => { $('dlgNew').close(); newGame(1); };
+$('newWhite').onclick = () => { $('dlgNew').close(); newGame(2); };
 $('undo').onclick = () => {
   if (thinking || !canUndo()) return;
   reqId++;
@@ -288,8 +365,19 @@ $('undo').onclick = () => {
   for (const k of Object.keys(an)) if (+k > moves.length) delete an[k];
   over = false; last = moves.length ? moves[moves.length - 1] : -1; next();
 };
-for (const id of ['optCand', 'optPv', 'optHeat']) $(id).onchange = refresh;
-$('optAn').onchange = () => { if ($('optAn').checked && !over && !thinking && ready) next(); else refresh(); };
+$('btnAn').onclick = () => { const o = $('app').classList.toggle('open'); if (o) $('side').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+function setTab(t) { tab = t; for (const b of document.querySelectorAll('.tabs button')) b.setAttribute('aria-selected', b.dataset.tab === t); for (const k of ['cand', 'mine', 'flow']) $('tab-' + k).hidden = k !== t; renderPanel(); }
+for (const b of document.querySelectorAll('.tabs button')) b.onclick = () => setTab(b.dataset.tab);
+$('vCur').onclick = () => { candView = 'cur'; renderPanel(); };
+$('vPrev').onclick = () => { candView = 'prev'; renderPanel(); };
+for (const id of ['optCand', 'optPv', 'optHeat']) $(id).onclick = () => { $(id).setAttribute('aria-pressed', !pressed(id)); refresh(); };
+$('optAn').checked = store.get('an', true);
+$('optAn').onchange = () => { store.set('an', $('optAn').checked); if ($('optAn').checked && !over && !thinking && ready) next(); else refresh(); };
+$('optConfirm').checked = store.get('confirm', matchMedia('(pointer: coarse)').matches);
+$('optConfirm').onchange = () => { store.set('confirm', $('optConfirm').checked); pending = -1; draw(); };
+function setLevel(ms) { levelMs = ms; for (const b of $('level').children) b.setAttribute('aria-pressed', +b.dataset.ms === ms); store.set('level', ms); }
+for (const b of $('level').children) b.onclick = () => setLevel(+b.dataset.ms);
+setLevel(store.get('level', 2000));
 
 worker = new Worker('worker.js');
 worker.onmessage = (e) => {
@@ -302,8 +390,8 @@ worker.onmessage = (e) => {
   else if (m.type === 'error') { setStatus('오류: ' + m.message, 'lose'); thinking = false; }
 };
 worker.postMessage({ type: 'init' });
-setStatus('엔진을 불러오는 중…'); draw(); renderPanel();
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', refresh);
+setStatus('불러오는 중…'); draw(); renderPanel();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', refresh);
 </script>
 </body>
 </html>
