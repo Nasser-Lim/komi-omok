@@ -29,6 +29,8 @@
   #inapp { display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--card); border:1px solid var(--accent); border-radius:12px; padding:8px 12px; font-size:.85rem; }
   #inapp a { color:var(--accent); font-weight:700; min-height:32px; display:inline-flex; align-items:center; }
   #inapp button { margin-left:auto; min-width:36px; min-height:36px; }
+  .rec { background:var(--card); border:2px solid var(--accent); border-radius:12px; padding:8px 12px; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  .rec .k { color:var(--muted); font-size:.78rem; } .rec .best { font-size:1.5rem; font-weight:800; color:var(--accent); } .rec .alt { color:var(--muted); font-size:.85rem; }
   .hud { display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:8px; }
   .who { display:flex; align-items:center; gap:6px; font-weight:600; padding:6px 10px; border-radius:999px; border:2px solid transparent; }
   .who.on { border-color:var(--accent); }
@@ -74,6 +76,8 @@
   .dlg { padding:16px; display:flex; flex-direction:column; gap:14px; }
   .dlg h2 { margin:0; font-size:1.05rem; }
   .big { min-height:56px; border-radius:14px; border:1px solid var(--edge); font-weight:700; display:flex; align-items:center; justify-content:center; gap:10px; }
+  .sep { font-weight:700; font-size:.9rem; border-top:1px solid var(--edge); padding-top:12px; } .sep small { display:block; font-weight:400; color:var(--muted); font-size:.78rem; }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
   .big.p { background:var(--accent); color:var(--accent-fg); border-color:var(--accent); }
   .seg { display:flex; border:1px solid var(--edge); border-radius:12px; overflow:hidden; }
   .seg button { flex:1; min-height:44px; font-size:.9rem; } .seg button[aria-pressed=true] { background:var(--accent); color:var(--accent-fg); font-weight:700; }
@@ -111,8 +115,9 @@
     <div class="hud">
       <div class="who" id="whoMe"><span class="stone b" id="stMe"></span>나</div>
       <div id="status">&nbsp;</div>
-      <div class="who" id="whoAi">B1<span class="stone w" id="stAi"></span></div>
+      <div class="who" id="whoAi"><span id="aiName">B1</span><span class="stone w" id="stAi"></span></div>
     </div>
+    <div class="rec" id="rec" hidden></div>
     <div class="wr"><div class="b" id="wrB" style="width:50%">50%</div><div class="w" id="wrW" style="width:50%">50%</div></div>
     <canvas id="board" width="720" height="720" aria-label="렌주 바둑판"></canvas>
     <div class="chips" role="group" aria-label="보드 표시">
@@ -144,8 +149,10 @@
 </div>
 
 <dialog id="dlgNew"><div class="dlg"><h2 id="newTitle">새 게임</h2>
-  <button class="big p" id="newBlack"><span class="stone b"></span>흑으로 시작 (선공)</button>
-  <button class="big" id="newWhite"><span class="stone w"></span>백으로 시작 (후공)</button>
+  <button class="big p" id="newBlack"><span class="stone b"></span>B1과 대국 · 내가 흑 (선공)</button>
+  <button class="big" id="newWhite"><span class="stone w"></span>B1과 대국 · 내가 백 (후공)</button>
+  <div class="sep">온라인 대국 도우미 <small>다른 사이트의 실제 대국 수를 입력하면 다음 수를 추천</small></div>
+  <div class="two"><button class="big" id="asBlack"><span class="stone b"></span>내가 흑</button><button class="big" id="asWhite"><span class="stone w"></span>내가 백</button></div>
   <button class="close" data-close id="newClose">닫기</button></div></dialog>
 
 <dialog id="dlgSet"><div class="dlg"><h2>설정</h2>
@@ -161,7 +168,7 @@ const N = 15, cv = document.getElementById('board'), ctx = cv.getContext('2d');
 const $ = (id) => document.getElementById(id);
 let worker, ready = false, board = new Array(N * N).fill(0), moves = [], human = 1, over = false, thinking = false, fb = new Array(N * N).fill(0), reqId = 0, last = -1, pending = -1, fbSig = null;
 let an = {};  // 둔 수 개수(ply) -> 그 국면의 분석
-let fromCache = false, firstPick = true, tab = 'cand', candView = 'cur', levelMs = 2000, flashTimer = 0;
+let assist = false, queuedTap = -1, hintBusy = false, hintDirty = false, hintSig = null, fromCache = false, firstPick = true, tab = 'cand', candView = 'cur', levelMs = 2000, flashTimer = 0;
 const colorOf = (i) => (i % 2 === 0 ? 1 : 2); // 수 번호 i(0부터)의 색: 흑 먼저
 const lab = (a) => 'ABCDEFGHIJKLMNO'[a % N] + (N - ((a / N) | 0));
 const pct = (x) => Math.round(x * 100) + '%';
@@ -174,6 +181,7 @@ function flash(t) { setStatus(t, 'lose'); clearTimeout(flashTimer); flashTimer =
 function turnStatus() {
   if (!ready) return setStatus('불러오는 중…');
   if (over) return;
+  if (assist) return setStatus(toMove() === human ? '내 차례 · 추천 확인' : '상대 차례 · 상대 수 입력');
   setStatus(thinking ? 'B1 생각 중…' : toMove() === human ? '내 차례' : '');
 }
 
@@ -204,7 +212,7 @@ function draw() {
   ctx.font = Math.round(m * 0.3) + 'px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.globalAlpha = .7;
   for (let i = 0; i < N; i++) { ctx.fillText('ABCDEFGHIJKLMNO'[i], g(i), m * 0.42); ctx.fillText(String(N - i), m * 0.4, g(i)); }
   ctx.globalAlpha = 1;
-  const rad = m * 0.45, cur = curAn(), showing = !over && !thinking && cur;
+  const rad = m * 0.45, cur = curAn(), showing = !over && !thinking && cur, fbOn = assist || human === 1;
   const xy = (i) => [g(i % N), g((i / N) | 0)];
   if (showing && pressed('optHeat')) {
     const p = cur.base.policy, mx = Math.max(...p);
@@ -229,19 +237,19 @@ function draw() {
       ctx.fillStyle = col === 1 ? '#fff' : '#111'; ctx.font = 'bold ' + Math.round(m * 0.38) + 'px system-ui'; ctx.fillText(String(k + 1), x, y + 1);
     });
   }
-  if (showing && pressed('optCand')) {  // 후보 수 1~3위
+  if (showing && (assist || pressed('optCand'))) {  // 후보 수 1~3위
     cur.cands.slice(0, 3).forEach((c, k) => {
       const [x, y] = xy(c.a);
       ctx.strokeStyle = ['#e0a000', '#3f8f55', '#4f7fc9'][k]; ctx.lineWidth = 4.5; ctx.beginPath(); ctx.arc(x, y, rad * 0.8, 0, 7); ctx.stroke();
       ctx.fillStyle = ctx.strokeStyle; ctx.font = 'bold ' + Math.round(m * 0.34) + 'px system-ui'; ctx.fillText(String(k + 1), x, y + 1);
     });
   }
-  if (!over && !thinking && human === 1 && colorOf(moves.length) === 1) {
+  if (!over && !thinking && fbOn && colorOf(moves.length) === 1) {
     ctx.strokeStyle = css.getPropertyValue('--bad'); ctx.lineWidth = 3.5;
     for (let i = 0; i < N * N; i++) if (fb[i] && !board[i]) { const [x, y] = xy(i), d = m * .2; ctx.beginPath(); ctx.moveTo(x - d, y - d); ctx.lineTo(x + d, y + d); ctx.moveTo(x + d, y - d); ctx.lineTo(x - d, y + d); ctx.stroke(); }
   }
   if (pending >= 0 && !over && !thinking) {  // 두 번 탭 모드: 선택한 자리에 반투명 돌과 붉은 테두리
-    const [x, y] = xy(pending), c = human === 1;
+    const [x, y] = xy(pending), c = colorOf(moves.length) === 1;
     ctx.globalAlpha = .55; ctx.fillStyle = c ? '#111' : '#fff'; ctx.beginPath(); ctx.arc(x, y, rad, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
     ctx.strokeStyle = '#d6402f'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(x, y, rad * 1.12, 0, 7); ctx.stroke();
   }
@@ -283,7 +291,9 @@ function renderPanel() {
   let a = null;
   for (let p = moves.length; p >= 0; p--) if (an[p] && sigOf(p) === an[p].sig) { a = an[p]; break; }
   if (a) { const w = blackWr(a); $('wrB').style.width = pct(w); $('wrW').style.width = pct(1 - w); $('wrB').textContent = pct(w); $('wrW').textContent = pct(1 - w); }
+  $('aiName').textContent = assist ? '상대' : 'B1';
   $('whoMe').classList.toggle('on', !over && toMove() === human); $('whoAi').classList.toggle('on', !over && toMove() !== human);
+  renderRec();
   $('stMe').className = 'stone ' + (human === 1 ? 'b' : 'w'); $('stAi').className = 'stone ' + (human === 1 ? 'w' : 'b');
   if (tab === 'flow') drawChart();
   // 내 수
@@ -294,7 +304,7 @@ function renderPanel() {
     for (const e of ev) cnt[e.delta >= -0.03 ? 0 : e.delta >= -0.10 ? 1 : e.delta >= -0.25 ? 2 : 3]++;
     let tot = 0, h1 = 0, h3 = 0;
     for (let i = 0; i + 1 < moves.length; i++) {
-      if (colorOf(i) === human) continue;
+      if (colorOf(i) !== (assist ? human : 3 - human)) continue;
       const b = an[i]; if (!b || b.sig !== sigOf(i)) continue;
       const c = b.cands.find((x) => x.a === moves[i]); if (!c || !c.replies.length) continue;
       tot++; if (moves[i + 1] === c.replies[0].a) h1++; if (c.replies.some((r) => r.a === moves[i + 1])) h3++;
@@ -303,16 +313,28 @@ function renderPanel() {
     $('mineBody').innerHTML = '<div class="grade"><span class="tag ' + cls + '">' + g + '</span><span>' + lab(moves[l.i]) + ' · 승률 ' + pct(l.wr0) + ' → ' + pct(l.wr1) + ' (' + (l.delta >= 0 ? '+' : '') + Math.round(l.delta * 100) + '%p)</span></div>' +
       '<div class="m">' + (l.rank >= 0 ? 'B1 후보 ' + (l.rank + 1) + '위' : 'B1 후보 밖') + '</div>' +
       '<div class="stats"><div><b>' + cnt[0] + '</b>좋은 수</div><div><b>' + cnt[1] + '</b>무난</div><div><b>' + cnt[2] + '</b>아쉬움</div><div><b>' + cnt[3] + '</b>큰 실수</div></div>' +
-      (tot ? '<p class="m">B1 예상 응수 적중: 1순위 ' + h1 + '/' + tot + ' · 상위3 ' + h3 + '/' + tot + '</p>' : '');
+      (tot ? '<p class="m">' + (assist ? '상대' : 'B1') + ' 예상 응수 적중: 1순위 ' + h1 + '/' + tot + ' · 상위3 ' + h3 + '/' + tot + '</p>' : '');
   } else { $('mineBody').className = 'empty'; $('mineBody').textContent = !$('optAn').checked ? '분석이 꺼져 있습니다.' : '두 수가 쌓이면 표시됩니다.'; }
   // 후보: 지금 국면 / B1이 직전에 본 수
   const cur = curAn(), p = moves.length - 1, pa = an[p], hasPrev = p >= 0 && colorOf(p) !== human && pa && pa.sig === sigOf(p);
   $('candSub').hidden = !hasPrev;
   if (!hasPrev) candView = 'cur';
+  $('vPrev').textContent = assist ? '상대가 둔 수' : 'B1이 본 수';
   $('vCur').setAttribute('aria-pressed', candView === 'cur'); $('vPrev').setAttribute('aria-pressed', candView === 'prev');
   if (candView === 'prev' && hasPrev) { $('cur').className = ''; $('cur').innerHTML = candHtml(pa); }
   else if (cur) { $('cur').className = ''; $('cur').innerHTML = candHtml(cur); }
   else { $('cur').className = 'empty'; $('cur').textContent = over ? '대국이 끝났습니다.' : !$('optAn').checked ? '분석이 꺼져 있습니다.' : thinking ? 'B1이 생각 중입니다.' : '분석 중…'; }
+}
+
+// 추천 수 배너 (도우미 모드): 내 차례면 추천 수, 상대 차례면 상대 예상 수
+function renderRec() {
+  const r = $('rec'), a = curAn();
+  r.hidden = !assist;
+  if (!assist) return;
+  if (over) { r.innerHTML = '<span class="k">대국 종료</span>'; return; }
+  if (!a || !a.cands.length) { r.innerHTML = '<span class="k">분석 중…</span>'; return; }
+  const mine = toMove() === human, c = a.cands;
+  r.innerHTML = '<span class="k">' + (mine ? '추천 수' : '상대 예상 수') + '</span><span class="best">' + lab(c[0].a) + '</span><span class="alt">승률 ' + pct((c[0].q + 1) / 2) + (c.length > 1 ? ' · ' + c.slice(1, 3).map((x, k) => (k + 2) + ' ' + lab(x.a)).join(' · ') : '') + '</span>';
 }
 
 function toMove() { return colorOf(moves.length); }
@@ -320,41 +342,52 @@ function refresh() { draw(); renderPanel(); }
 
 function afterMove() {
   const idx = moves[moves.length - 1], color = colorOf(moves.length - 1);
-  if (winAt(board, idx, color)) { over = true; setStatus(color === human ? '이겼습니다! 🎉' : 'B1 승리', color === human ? 'win' : 'lose'); refresh(); updateButtons(); return; }
+  if (winAt(board, idx, color)) { over = true; setStatus(assist ? (color === human ? '내 5목 완성!' : '상대 5목 완성') : (color === human ? '이겼습니다! 🎉' : 'B1 승리'), color === human ? 'win' : 'lose'); refresh(); updateButtons(); return; }
   if (moves.length === N * N) { over = true; setStatus('무승부'); refresh(); updateButtons(); return; }
   next();
 }
 
+function requestHint() {  // 분석은 한 번에 하나만 돌린다. 도는 동안 국면이 바뀌면 끝난 뒤 최신 국면을 다시 분석한다
+  if (hintBusy) { hintDirty = true; return; }
+  const ply = moves.length, sig = sigOf(ply);
+  if (an[ply] && an[ply].sig === sig) return;
+  hintBusy = true; hintSig = sig;
+  worker.postMessage({ type: 'hint', ms: assist ? levelMs : 800, board, toMove: toMove(), ply, sig, analyze: true });
+}
+
 function next() {
-  pending = -1; refresh(); updateButtons();
+  pending = -1; queuedTap = -1; refresh(); updateButtons();
   if (over || !ready) return turnStatus();
-  const an_on = $('optAn').checked, ply = moves.length, req = { board, toMove: toMove(), ply, sig: sigOf(ply), analyze: an_on };
-  if (toMove() === human) {
+  const an_on = assist || $('optAn').checked, ply = moves.length, req = { board, toMove: toMove(), ply, sig: sigOf(ply), analyze: an_on };
+  if (assist || toMove() === human) {
     turnStatus();
-    if (human === 1 && fbSig !== req.sig) worker.postMessage({ type: 'forbidden', sig: req.sig, board, toMove: 1 });
-    if (an_on && !(an[ply] && an[ply].sig === req.sig)) worker.postMessage({ type: 'hint', ms: 800, ...req });
+    if (toMove() === 1 && (assist || human === 1) && fbSig !== req.sig) worker.postMessage({ type: 'forbidden', sig: req.sig, board, toMove: 1 });
+    if (an_on) requestHint();
   } else {
     thinking = true; updateButtons(); turnStatus();
     const id = ++reqId; worker.postMessage({ type: 'search', id, ms: levelMs, ...req });
   }
 }
 
-function place(idx) { board[idx] = colorOf(moves.length); moves.push(idx); last = idx; pending = -1; fb = new Array(N * N).fill(0); fbSig = null; afterMove(); }
-function canUndo() { return moves.some((_, i) => colorOf(i) === human); }
+function place(idx) { board[idx] = colorOf(moves.length); moves.push(idx); last = idx; pending = -1; queuedTap = -1; fb = new Array(N * N).fill(0); fbSig = null; afterMove(); }
+function canUndo() { return assist ? moves.length > 0 : moves.some((_, i) => colorOf(i) === human); }
 function updateButtons() { $('undo').disabled = !ready || thinking || !canUndo(); }
-function newGame(h) { reqId++; human = h; board = new Array(N * N).fill(0); moves = []; an = {}; over = false; thinking = false; last = -1; pending = -1; candView = 'cur'; fb = new Array(N * N).fill(0); fbSig = null; next(); }
+function newGame(h, asst = false) { reqId++; assist = asst; queuedTap = -1; human = h; board = new Array(N * N).fill(0); moves = []; an = {}; over = false; thinking = false; last = -1; pending = -1; candView = 'cur'; fb = new Array(N * N).fill(0); fbSig = null; next(); }
 
+function tapCell(idx) {
+  if (!ready || over || thinking || board[idx]) return;
+  if (!assist && toMove() !== human) return;
+  const bt = toMove() === 1 && (assist || human === 1);  // 금지 칸이 적용되는 흑 차례
+  if (bt && fbSig !== sigOf(moves.length)) { queuedTap = idx; return; }  // 금지 칸 정보가 오면 그때 처리한다
+  if (bt && fb[idx]) { pending = -1; draw(); flash('금지 자리입니다'); return; }
+  if (!$('optConfirm').checked || pending === idx) return place(idx);
+  pending = idx; draw();
+}
 cv.addEventListener('click', (e) => {
-  if (!ready || over || thinking || toMove() !== human) return;
   const rc = cv.getBoundingClientRect(), m = rc.width / (N + 1);
   const c = Math.round((e.clientX - rc.left) / m - 1), r = Math.round((e.clientY - rc.top) / m - 1);
   if (r < 0 || r >= N || c < 0 || c >= N) return;
-  const idx = r * N + c;
-  if (board[idx]) return;
-  if (human === 1 && fbSig !== sigOf(moves.length)) return;  // 금지 칸 정보가 오기 전에는 두지 못하게 한다
-  if (human === 1 && fb[idx]) { pending = -1; draw(); flash('금지 자리입니다'); return; }
-  if (!$('optConfirm').checked || pending === idx) return place(idx);
-  pending = idx; draw();
+  tapCell(r * N + c);
 });
 
 // 대화상자, 탭, 토글
@@ -365,13 +398,16 @@ for (const d of document.querySelectorAll('dialog')) {
 }
 $('btnNew').onclick = () => { $('newClose').hidden = firstPick; $('newTitle').textContent = firstPick ? '어느 쪽으로 둘까요?' : '새 게임'; dlg('dlgNew'); };
 $('btnSet').onclick = () => dlg('dlgSet');
-const pick = (h) => { firstPick = false; $('dlgNew').close(); newGame(h); };
+const pick = (h, asst) => { firstPick = false; $('dlgNew').close(); newGame(h, !!asst); };
 $('newBlack').onclick = () => pick(1);
 $('newWhite').onclick = () => pick(2);
+$('asBlack').onclick = () => pick(1, true);
+$('asWhite').onclick = () => pick(2, true);
 $('undo').onclick = () => {
   if (thinking || !canUndo()) return;
   reqId++;
-  for (;;) { const i = moves.pop(), wasHuman = colorOf(moves.length) === human; board[i] = 0; if (wasHuman) break; }
+  if (assist) board[moves.pop()] = 0;
+  else for (;;) { const i = moves.pop(), wasHuman = colorOf(moves.length) === human; board[i] = 0; if (wasHuman) break; }
   for (const k of Object.keys(an)) if (+k > moves.length) delete an[k];
   over = false; last = moves.length ? moves[moves.length - 1] : -1; next();
 };
@@ -399,10 +435,13 @@ worker.onmessage = (e) => {
   const m = e.data;
   if (m.type === 'progress') { fromCache = !!m.cached; const p = m.total ? (100 * m.got / m.total) : 0; $('bar').value = m.label === '정책망' ? p * 0.33 : 33 + p * 0.67; $('loadtext').textContent = m.label + (m.cached ? ' 저장본 불러오는 중' : ' 내려받는 중 ' + Math.round(m.got / 1e6) + 'MB'); }
   else if (m.type === 'ready') { ready = true; $('loading').hidden = true; $('btnNew').disabled = false; setStatus('색을 선택하세요'); $('btnNew').click(); }
-  else if (m.type === 'forbidden') { if (m.sig === sigOf(moves.length)) { fb = m.fb; fbSig = m.sig; draw(); } }
+  else if (m.type === 'forbidden') { if (m.sig === sigOf(moves.length)) { fb = m.fb; fbSig = m.sig; draw(); if (queuedTap >= 0) { const i = queuedTap; queuedTap = -1; tapCell(i); } } }
   else if (m.type === 'move') { if (m.id !== reqId) return; thinking = false; place(m.action); }
-  else if (m.type === 'analysis') { if (m.an.sig === sigOf(m.an.ply)) { an[m.an.ply] = m.an; refresh(); } }
-  else if (m.type === 'error') { setStatus('오류: ' + m.message, 'lose'); thinking = false; }
+  else if (m.type === 'analysis') {
+    if (m.an.sig === hintSig && hintBusy) { hintBusy = false; if (hintDirty) { hintDirty = false; requestHint(); } }
+    if (m.an.sig === sigOf(m.an.ply)) { an[m.an.ply] = m.an; refresh(); }
+  }
+  else if (m.type === 'error') { setStatus('오류: ' + m.message, 'lose'); thinking = false; hintBusy = false; }
 };
 worker.postMessage({ type: 'init' });
 setStatus('불러오는 중…'); draw(); renderPanel();
