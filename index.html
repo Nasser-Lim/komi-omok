@@ -145,6 +145,27 @@
   input[type=checkbox]:checked { background:var(--blue); } input[type=checkbox]:checked::after { left:23px; }
   details { font-size:.85rem; color:var(--muted); } summary { cursor:pointer; min-height:32px; color:var(--ink); }
   .close { align-self:center; padding:8px 22px; border-radius:999px; background:var(--bg); min-height:44px; color:var(--muted); }
+  /* 승리·패배 연출 (1초) */
+  .fx { position:fixed; inset:0; z-index:50; display:grid; place-items:center; background:rgba(18,40,110,.72); animation:fxIn .15s ease-out; overflow:hidden; }
+  .fx.lose { background:rgba(38,40,52,.8); }
+  .fxc { position:relative; display:flex; flex-direction:column; align-items:center; gap:12px; }
+  .fxg { width:150px; height:150px; border-radius:50%; box-shadow:0 10px 30px rgba(0,0,0,.3); border:5px solid #fff; }
+  .fxt { font-family:"Jua",sans-serif; font-size:2.2rem; color:#fff; text-shadow:0 3px 0 rgba(0,0,0,.25); }
+  .fx.win .fxg { animation:jump .45s ease-in-out 2; }
+  .fx.win .fxt { animation:pop .4s ease-out; color:var(--yellow); }
+  .fx.lose .fxg { filter:grayscale(.75); animation:droop .9s ease-out forwards; }
+  .fx.lose .fxt { color:#dfe3ea; }
+  .fxg { position:relative; z-index:1; }
+  .burst { position:absolute; left:50%; top:75px; width:0; height:0; z-index:2; }
+  .cf { position:absolute; width:10px; height:16px; border-radius:3px; animation:fly .95s cubic-bezier(.15,.7,.3,1) forwards; }
+  .drop { position:absolute; font-size:1.6rem; animation:fall .9s ease-in forwards; }
+  @keyframes fxIn { from { opacity:0 } }
+  @keyframes jump { 0%,100% { transform:translateY(0) scale(1) } 40% { transform:translateY(-34px) scale(1.06) rotate(-6deg) } 70% { transform:translateY(0) scale(.96,1.04) } }
+  @keyframes pop { 0% { transform:scale(.4); opacity:0 } 70% { transform:scale(1.15) } 100% { transform:scale(1) } }
+  @keyframes droop { 0% { transform:rotate(0) } 25% { transform:rotate(-9deg) } 50% { transform:rotate(7deg) } 100% { transform:translateY(14px) rotate(-4deg) scale(.95) } }
+  @keyframes fly { 0% { transform:translate(0,0) rotate(0); opacity:1 } 75% { opacity:1 } 100% { transform:translate(var(--dx),var(--dy)) rotate(var(--r)); opacity:0 } }
+  @keyframes fall { from { transform:translateY(0); opacity:1 } to { transform:translateY(90px); opacity:0 } }
+  @media (prefers-reduced-motion: reduce) { .fx *, .fx { animation:none !important; } }
   .contact { margin:0; text-align:center; font-size:.75rem; color:var(--muted); }
   details a { color:var(--blue-d); font-weight:700; }
   .result { text-align:center; font-size:.95rem; color:var(--muted); margin:-4px 0 0; }
@@ -242,6 +263,8 @@
   <div class="two"><button class="big" id="asBlack"><span class="stone b"></span>내가 흑</button><button class="big" id="asWhite"><span class="stone w"></span>내가 백</button></div>
   <button class="close" data-close id="newClose">닫기</button></div></dialog>
 
+<div id="fx" class="fx" hidden aria-live="assertive"><div class="fxc"><div class="burst" id="burst"></div><img class="fxg" src="img/gomi.webp" alt=""><div class="fxt" id="fxt"></div></div></div>
+
 <dialog id="dlgEnd"><div class="dlg">
   <img class="gomi" src="img/gomi.webp" alt="">
   <h2 id="endTitle">대국 종료</h2>
@@ -254,6 +277,7 @@
     <div class="seg" id="level"><button data-ms="500" aria-pressed="false">빠름 0.5초</button><button data-ms="2000" aria-pressed="true">보통 2초</button><button data-ms="6000" aria-pressed="false">강함 6초</button></div></div>
   <div class="set"><label for="optAn">분석<small>후보·승률 계산</small></label><input type="checkbox" id="optAn" checked></div>
   <div class="set"><label for="optConfirm">두 번 탭해서 두기<small>잘못 누름 방지</small></label><input type="checkbox" id="optConfirm"></div>
+  <div class="set"><label for="optSound">효과음<small>이기고 질 때 소리</small></label><input type="checkbox" id="optSound" checked></div>
   <details><summary>렌주 규칙</summary>흑은 3-3, 4-4, 6목 이상 금지(✕ 표시), 정확히 5목이면 승리. 백은 5목 이상이면 승리.</details>
   <details><summary>엔진 정보</summary>고미의 엔진은 자체 개발한 B1(직선 패턴 신경망 + 몬테카를로 트리 탐색)입니다. 쉽게 말해 고미는 오목판의 가로·세로·대각선 줄 모양을 보고 "여기가 좋겠다"를 먼저 떠올린 뒤, 그다음 수들을 수천 번 미리 둬 보면서 가장 좋은 자리를 골라요. 이 모든 생각은 인터넷 서버가 아니라 지금 쓰는 폰이나 컴퓨터 안에서만 이뤄져요. 내가 둔 수는 어디로도 보내지 않아요.</details>
   <details><summary>고미 가중치 공개</summary>고미의 두뇌인 신경망 가중치를 GitHub에 공개했어요. 출처를 밝히면 비상업적 용도로 자유롭게 쓸 수 있어요(CC BY-NC 4.0). 내려받는 법과 사용법은 <a href="https://github.com/Nasser-Lim/komi-omok" target="_blank" rel="noopener">GitHub 저장소</a>에 있어요.</details>
@@ -471,7 +495,50 @@ function renderRec() {
 function toMove() { return colorOf(moves.length); }
 function refresh() { draw(); renderPanel(); }
 
-function showEnd(title, sub) { $('endTitle').textContent = title; $('endSub').textContent = sub; setTimeout(() => { if (over && !$('dlgEnd').open) $('dlgEnd').showModal(); }, 700); }
+function showEnd(title, sub) { $('endTitle').textContent = title; $('endSub').textContent = sub; if (over && !$('dlgEnd').open) $('dlgEnd').showModal(); }
+
+// 효과음: 파일 없이 Web Audio로 합성한다. 브라우저는 사용자가 한 번 눌러야 소리를 허용하므로 첫 터치 때 준비해 둔다
+let actx = null;
+function audio() {
+  try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); } catch (e) { actx = null; }
+  return actx;
+}
+document.addEventListener('pointerdown', () => { if ($('optSound').checked) audio(); }, { passive: true });
+function tone(t0, f, dur, type, vol, f2) {
+  const a = actx, o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t0); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + dur);
+  g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g).connect(a.destination); o.start(t0); o.stop(t0 + dur + 0.05);
+}
+function playFx(win) {
+  if (!$('optSound').checked || !audio()) return;
+  const t = actx.currentTime + 0.03;
+  if (win) {  // 도-미-솔-도 올라가는 팡파르
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(t + i * 0.1, f, 0.22, 'triangle', 0.25));
+    tone(t + 0.42, 1046.5, 0.55, 'triangle', 0.2); tone(t + 0.42, 1318.5, 0.55, 'sine', 0.14); tone(t + 0.42, 1567.98, 0.55, 'sine', 0.1);
+  } else {    // 솔-파-미♭ 내려가다 처지는 소리
+    [392, 349.23, 311.13].forEach((f, i) => tone(t + i * 0.2, f, 0.26, 'triangle', 0.22));
+    tone(t + 0.6, 293.66, 0.6, 'triangle', 0.22, 185);
+  }
+}
+// 1초 연출 뒤 done()을 부른다
+function ceremony(win, title, done) {
+  const fx = $('fx'), b = $('burst');
+  fx.className = 'fx ' + (win ? 'win' : 'lose'); $('fxt').textContent = title; b.innerHTML = '';
+  if (win) {
+    const cols = ['#ffcc2e', '#1d8cf0', '#ff6b8b', '#5ad17a', '#ffffff', '#8a63f0'];
+    for (let i = 0; i < 30; i++) {
+      const s = document.createElement('span'), ang = Math.random() * Math.PI * 2, dist = 120 + Math.random() * 160;
+      s.className = 'cf'; s.style.background = cols[i % cols.length];
+      s.style.setProperty('--dx', Math.cos(ang) * dist + 'px'); s.style.setProperty('--dy', Math.sin(ang) * dist - 40 + 'px'); s.style.setProperty('--r', (Math.random() * 720 - 360) + 'deg');
+      b.appendChild(s);
+    }
+  } else {
+    for (const [x, d] of [[-50, 0], [38, 180]]) { const s = document.createElement('span'); s.className = 'drop'; s.textContent = '💧'; s.style.left = x + 'px'; s.style.top = '-10px'; s.style.animationDelay = d + 'ms'; b.appendChild(s); }
+  }
+  fx.hidden = false; playFx(win);
+  setTimeout(() => { fx.hidden = true; if (done) done(); }, 1000);
+}
 
 function afterMove() {
   const idx = moves[moves.length - 1], color = colorOf(moves.length - 1);
@@ -479,7 +546,8 @@ function afterMove() {
     over = true; const won = color === human;
     setStatus(assist ? (won ? '내 5목 완성!' : '상대 5목 완성') : (won ? '이겼어요! 🎉' : '고미 승리'), won ? 'win' : 'lose');
     refresh(); updateButtons();
-    if (!assist) showEnd(won ? '이겼어요! 🎉' : '고미가 이겼어요', (won ? '대단해요! ' : '아쉬워요. ') + moves.length + '수 만에 끝났어요.');
+    if (assist) ceremony(won, won ? '5목 완성!' : '상대 5목…', null);
+    else ceremony(won, won ? '이겼어요!' : '고미가 이겼어요', () => showEnd(won ? '이겼어요! 🎉' : '고미가 이겼어요', (won ? '대단해요! ' : '아쉬워요. ') + moves.length + '수 만에 끝났어요.'));
     return;
   }
   if (moves.length === N * N) { over = true; setStatus('무승부'); refresh(); updateButtons(); if (!assist) showEnd('무승부', '판이 꽉 찼어요.'); return; }
@@ -565,7 +633,9 @@ for (const id of ['optCand', 'optPv']) $(id).onclick = () => { $(id).setAttribut
 $('optAn').checked = store.get('an', true);
 $('optAn').onchange = () => { store.set('an', $('optAn').checked); if ($('optAn').checked && !over && !thinking && ready) next(); else refresh(); };
 $('optConfirm').checked = store.get('confirm', matchMedia('(pointer: coarse)').matches);
-$('optConfirm').onchange = () => { store.set('confirm', $('optConfirm').checked); pending = -1; draw(); };
+$('optSound').checked = store.get('sound', true);
+$('optSound').onchange = () => { store.set('sound', $('optSound').checked); if ($('optSound').checked) audio(); };
+$('optConfirm').onchange =() => { store.set('confirm', $('optConfirm').checked); pending = -1; draw(); };
 function setLevel(ms) { levelMs = ms; for (const b of $('level').children) b.setAttribute('aria-pressed', +b.dataset.ms === ms); store.set('level', ms); }
 for (const b of $('level').children) b.onclick = () => setLevel(+b.dataset.ms);
 setLevel(store.get('level', 2000));
