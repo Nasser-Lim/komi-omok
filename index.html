@@ -23,15 +23,16 @@
   button { font-size:inherit; color:inherit; background:none; border:0; padding:0; cursor:pointer; }
   button:disabled { opacity:.4; cursor:default; }
 
-  /* 히어로 */
-  .hero { position:relative; width:100%; max-width:1080px; margin:0 auto; }
-  .hero img { display:block; width:100%; height:150px; object-fit:cover; object-position:19% 50%; border-radius:0 0 22px 22px; }
-  .hero .gear { position:absolute; top:calc(10px + env(safe-area-inset-top)); right:max(12px, env(safe-area-inset-right)); width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,.88); display:grid; place-items:center; box-shadow:var(--shadow); color:var(--navy); }
+  /* 레이아웃: 모바일은 위에서 아래로 한 줄, 데스크톱은 [보드 | 패널] 두 칸 */
+  .app { max-width:560px; margin:0 auto; padding:max(10px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-left)) calc(92px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-right)); display:flex; flex-direction:column; gap:10px; }
+  .panel { display:contents; }
+  .hero { order:1; position:relative; }
+  .hero img { display:block; width:100%; height:132px; object-fit:cover; object-position:19% 50%; border-radius:20px; box-shadow:var(--shadow); }
+  .hero .gear { position:absolute; top:10px; right:10px; width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,.9); display:grid; place-items:center; box-shadow:var(--shadow); color:var(--navy); }
   .gear svg, .bar svg { width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
-
-  .app { max-width:560px; margin:0 auto; padding:12px max(14px, env(safe-area-inset-left)) calc(92px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-right)); display:grid; gap:12px; }
-  .play, .side { display:flex; flex-direction:column; gap:10px; min-width:0; }
-  .side { display:none; } .app.open .side { display:flex; }
+  #inapp { order:2; } #loading { order:3; } .players { order:4; } .wrbox { order:5; } #status { order:6; } .rec { order:7; }
+  .stage { order:8; } .chips { order:9; } .side { order:10; display:none; flex-direction:column; gap:10px; min-width:0; }
+  .app.open .side { display:flex; }
 
   #inapp { display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:#fff8dc; border:1.5px solid var(--yellow); border-radius:14px; padding:8px 12px; font-size:.85rem; }
   #inapp a { color:var(--blue-d); font-weight:700; }
@@ -128,31 +129,35 @@
   details { font-size:.85rem; color:var(--muted); } summary { cursor:pointer; min-height:32px; color:var(--ink); }
   .close { align-self:center; padding:8px 22px; border-radius:999px; background:var(--bg); min-height:44px; color:var(--muted); }
   .result { text-align:center; font-size:.95rem; color:var(--muted); margin:-4px 0 0; }
-  footer { text-align:center; color:var(--muted); font-size:.75rem; }
-  footer a { color:inherit; }
 
   @media (min-width:900px) {
-    .hero img { height:auto; aspect-ratio:2804 / 561; border-radius:0 0 28px 28px; }
-    .app { max-width:1080px; grid-template-columns:minmax(0,520px) minmax(0,1fr); align-items:start; padding-bottom:28px; }
-    .side { display:flex; position:sticky; top:12px; }
-    .bar { position:static; background:none; border:0; backdrop-filter:none; padding:0; justify-content:flex-start; }
-    .bar button { max-width:none; flex-direction:row; gap:8px; min-height:52px; }
+    :root { --bs:clamp(380px, min(calc(100dvh - 36px), calc(100vw - 500px)), 800px); }
+    .app { max-width:none; flex-direction:row; justify-content:center; align-items:flex-start; gap:22px; padding:18px 20px; }
+    .stage { order:0; width:var(--bs); flex:none; }
+    .panel { display:flex; flex-direction:column; gap:10px; width:min(450px, calc(100vw - var(--bs) - 64px)); min-width:340px; max-height:calc(100dvh - 36px); overflow-y:auto; scrollbar-width:thin; padding:2px 6px 6px 2px; }
+    .hero, #inapp, #loading, .players, .wrbox, #status, .rec, .chips, .side { order:0; }
+    .hero img { height:128px; border-radius:22px; }
+    .side { display:flex; }
+    .bar { position:static; order:0; background:none; border:0; backdrop-filter:none; padding:0; justify-content:flex-start; }
+    .bar button { max-width:none; flex-direction:row; gap:8px; min-height:50px; }
     #btnAn { display:none; }
-    #inapp, #loading, footer { grid-column:1 / -1; }
   }
+  @media (min-width:900px) and (max-height:780px) { .hero img { height:92px; } }
 </style>
 </head>
 <body>
-<div class="hero">
+
+
+<div class="app" id="app">
+  <div class="stage"><div class="boardwrap"><canvas id="board" width="760" height="760" aria-label="오목판"></canvas></div></div>
+  <div class="panel">
+  <div class="hero">
   <img src="img/hero-1200.webp" srcset="img/hero-1200.webp 1200w, img/hero-2400.webp 2400w" sizes="(max-width: 899px) 750px, 1080px" alt="KOMI, 오목 두는 고미" width="2804" height="561">
   <button class="gear" id="btnSet" aria-label="설정"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3 1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8 1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
 </div>
-
-<div class="app" id="app">
   <div id="inapp" hidden><span>카카오톡 안에서는 90MB 파일이 저장되지 않아 매번 받을 수 있어요.</span><a id="openExt" href="#">기본 브라우저로 열기</a><button id="inappX" aria-label="닫기">✕</button></div>
   <div id="loading"><span id="loadtext">고미를 깨우는 중… (약 90MB, 처음 한 번)</span><progress id="bar" max="100" value="0"></progress></div>
 
-  <section class="play">
     <div class="players">
       <div class="pl" id="whoMe"><div class="avw"><span class="av stone b" id="stMe"></span></div><div><b>나</b><small id="meSub">흑</small></div></div>
       <span class="vs">VS</span>
@@ -161,7 +166,6 @@
     <div class="wrbox" aria-label="평가 승률"><span class="s stone b"></span><span id="wrBt">50%</span><div class="wr"><div class="b" id="wrB" style="width:50%"></div><div class="w" id="wrW" style="width:50%"></div></div><span id="wrWt">50%</span><span class="s stone w"></span></div>
     <div id="status">&nbsp;</div>
     <div class="rec" id="rec" hidden></div>
-    <div class="boardwrap"><canvas id="board" width="760" height="760" aria-label="오목판"></canvas></div>
     <div class="chips" role="group" aria-label="보드 표시">
       <button class="chip" id="optCand" aria-pressed="false">후보</button>
       <button class="chip" id="optPv" aria-pressed="false">수순</button>
@@ -172,7 +176,6 @@
       <button id="undo" disabled><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>무르기</button>
       <button id="btnAn" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>분석</button>
     </nav>
-  </section>
 
   <section class="side" id="side">
     <div class="tabs" role="tablist">
@@ -187,7 +190,7 @@
     <div class="card" id="tab-mine" hidden><div id="mineBody" class="empty">두 수가 쌓이면 표시돼요.</div></div>
     <div class="card" id="tab-flow" hidden><canvas id="chart" width="600" height="240" aria-label="수순별 흑 승률"></canvas><p class="m">값망 평가를 승률처럼 바꾼 값이에요 (보정 전).</p></div>
   </section>
-  <footer>임태우 · <a href="mailto:eight@sbs.co.kr">eight@sbs.co.kr</a></footer>
+  </div>
 </div>
 
 <dialog id="dlgNew"><div class="dlg">

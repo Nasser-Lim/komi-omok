@@ -1,12 +1,35 @@
-# SBS-B1
+# 🐻 고미와 오목 한 판
 
-Play Renju (15x15, standard Renju rules) against B1 in the browser. Everything runs locally in your browser via WebAssembly; no moves are sent anywhere.
+**KOMI · 오목 두는 고미** — 링크만 열면 바로 시작하는 오목 게임이에요.
+설치도, 가입도 필요 없어요.
 
-Open the page: https://nasser-lim.github.io/sbs-b1/
+👉 **https://nasser-lim.github.io/komi-omok/**
 
-- First load downloads about 90 MB of network weights (cached afterwards).
-- The weights were trained on evaluations and search outputs produced by [Rapfi](https://github.com/dhbloo/rapfi) (engine: GPL v3; official networks: CC0). They are not Rapfi weight files.
-- The win-rate values shown on the page are scaled network outputs, not calibrated probabilities.
-- No license is granted for the weights or page code yet (all rights reserved).
+## 이런 걸 할 수 있어요
 
-Developer: 임태우 - eight@sbs.co.kr
+- **고미와 한 판** : 흑(선공)이나 백(후공)을 골라 고미와 겨뤄요. 고미가 생각하는 시간도 고를 수 있어요.
+- **승률 막대** : 지금 누가 유리한지 한눈에 볼 수 있어요.
+- **후보 수 보기** : 고미가 좋다고 보는 자리를 보드 위에 표시해 줘요.
+- **내 수 평가** : 내가 둔 수가 좋았는지, 아쉬웠는지 알려 줘요.
+- **온라인 대국 도우미** : 다른 사이트에서 두고 있는 실제 대국의 수를 입력하면, 다음에 둘 만한 수를 추천해 줘요.
+- **렌주 규칙** : 흑은 3-3, 4-4, 6목 이상이 금지예요. 금지 자리는 ✕로 보여 줘요. 정확히 5목이면 흑이 이기고, 백은 5목 이상이면 이겨요.
+
+## 처음 열 때 알아두세요
+
+- 처음 한 번만 약 90MB를 내려받아요. **와이파이에서 열어 주세요.** 한 번 받으면 다음부터는 훨씬 빨리 열려요.
+- 카카오톡 안에서 열면 매번 새로 받을 수 있어요. 화면 위 안내를 눌러 **크롬이나 사파리 같은 기본 브라우저로 열어 보세요.**
+- 고미는 **내 폰이나 컴퓨터 안에서만** 생각해요. 내가 둔 수는 어디로도 전송되지 않아요.
+
+## 이렇게 즐겨 보세요
+
+- 모바일에서는 보드를 **두 번 탭해야 돌이 놓이게** 해 두었어요(설정에서 바꿀 수 있어요). 손가락으로 잘못 눌러도 괜찮아요.
+- 잘못 뒀다면 **무르기**를 눌러요.
+- 이기고 싶다면 설정에서 고미의 생각 시간을 **빠름**으로 바꿔 보세요. 😄
+
+## 참고
+
+- 승률은 고미가 보는 느낌을 숫자로 바꾼 값이에요. 정확한 확률은 아니니 재미로 봐 주세요.
+- 온라인 대국 도우미는 연습이나 복기용으로 써 주세요. 사이트에 따라 대국 중 AI 도움을 금지하는 곳도 있어요.
+- 이 페이지의 이미지와 프로그램은 별도의 사용 허락을 아직 정하지 않았어요(모든 권리 보유).
+
+만든 사람 : 임태우 · eight@sbs.co.kr
