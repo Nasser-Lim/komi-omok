@@ -1,0 +1,46 @@
+importScripts('engine.js', 'b1core.js');
+let b1 = null;
+async function fetchBytes(url, label) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(url + ' ' + r.status);
+  const total = +r.headers.get('content-length') || 0, rd = r.body.getReader(), parts = [];
+  let got = 0;
+  for (;;) {
+    const { done, value } = await rd.read();
+    if (done) break;
+    parts.push(value); got += value.length;
+    postMessage({ type: 'progress', label, got, total });
+  }
+  const out = new Uint8Array(got); let o = 0;
+  for (const p of parts) { out.set(p, o); o += p.length; }
+  return out;
+}
+function analysis(m, r) {
+  const an = b1.analyze(m.board, m.toMove, m.ply, r);
+  an.sig = m.sig;
+  postMessage({ type: 'analysis', an });
+}
+onmessage = async (e) => {
+  const m = e.data;
+  try {
+    if (m.type === 'init') {
+      const a0 = await fetchBytes('models/a0-s0.lnw', '정책망');
+      const c64 = await fetchBytes('models/c64-s0.lnw', '값망');
+      b1 = await createB1(EngineModule, a0, c64);
+      postMessage({ type: 'ready' });
+    } else if (m.type === 'forbidden') {
+      b1.setPosition(m.board, m.toMove);
+      postMessage({ type: 'forbidden', id: m.id, fb: b1.forbidden() });
+    } else if (m.type === 'search') {
+      b1.setPosition(m.board, m.toMove);
+      const r = b1.search(m.ms, m.ply);
+      postMessage({ type: 'move', id: m.id, action: r.action, value: r.value, evals: r.evals, ms: r.ms });
+      if (m.analyze) analysis(m, r);  // 둔 수는 먼저 보내고, 후보·예상 수순 계산은 그 뒤에 한다
+    } else if (m.type === 'hint') {  // 사람 차례의 국면을 짧게 탐색해 후보·평가를 낸다
+      b1.setPosition(m.board, m.toMove);
+      analysis(m, b1.search(m.ms, m.ply));
+    }
+  } catch (err) {
+    postMessage({ type: 'error', message: String(err && err.message || err) });
+  }
+};
