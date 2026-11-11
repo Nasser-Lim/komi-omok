@@ -145,7 +145,8 @@
   input[type=checkbox]:checked { background:var(--blue); } input[type=checkbox]:checked::after { left:23px; }
   details { font-size:.85rem; color:var(--muted); } summary { cursor:pointer; min-height:32px; color:var(--ink); }
   .close { align-self:center; padding:8px 22px; border-radius:999px; background:var(--bg); min-height:44px; color:var(--muted); }
-  .contact { margin:0; text-align:center; font-size:.75rem; color:var(--muted); user-select:all; }
+  .contact { margin:0; text-align:center; font-size:.75rem; color:var(--muted); }
+  details a { color:var(--blue-d); font-weight:700; }
   .result { text-align:center; font-size:.95rem; color:var(--muted); margin:-4px 0 0; }
 
   /* 데스크톱: [분석 서랍] [게임] — 보드는 창 높이에 맞춘다 */
@@ -255,7 +256,8 @@
   <div class="set"><label for="optConfirm">두 번 탭해서 두기<small>잘못 누름 방지</small></label><input type="checkbox" id="optConfirm"></div>
   <details><summary>렌주 규칙</summary>흑은 3-3, 4-4, 6목 이상 금지(✕ 표시), 정확히 5목이면 승리. 백은 5목 이상이면 승리.</details>
   <details><summary>엔진 정보</summary>고미의 엔진은 자체 개발한 B1(직선 패턴 신경망 + 몬테카를로 트리 탐색)입니다. 쉽게 말해 고미는 오목판의 가로·세로·대각선 줄 모양을 보고 "여기가 좋겠다"를 먼저 떠올린 뒤, 그다음 수들을 수천 번 미리 둬 보면서 가장 좋은 자리를 골라요. 이 모든 생각은 인터넷 서버가 아니라 지금 쓰는 폰이나 컴퓨터 안에서만 이뤄져요. 내가 둔 수는 어디로도 보내지 않아요.</details>
-  <p class="contact">문의 · eight@sbs.co.kr</p>
+  <details><summary>고미 가중치 공개</summary>고미의 두뇌인 신경망 가중치를 GitHub에 공개했어요. 출처를 밝히면 비상업적 용도로 자유롭게 쓸 수 있어요(CC BY-NC 4.0). 내려받는 법과 사용법은 <a href="https://github.com/Nasser-Lim/komi-omok" target="_blank" rel="noopener">GitHub 저장소</a>에 있어요.</details>
+  <p class="contact">KOMI v1.0.0 · 엔진 B1</p>
   <button class="close" data-close>닫기</button></div></dialog>
 
 <script>
