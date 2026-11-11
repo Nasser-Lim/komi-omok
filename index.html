@@ -144,6 +144,10 @@
   input[type=checkbox]::after { content:""; position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%; background:#fff; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.2); }
   input[type=checkbox]:checked { background:var(--blue); } input[type=checkbox]:checked::after { left:23px; }
   details { font-size:.85rem; color:var(--muted); } summary { cursor:pointer; min-height:32px; color:var(--ink); }
+  #dlgSet .dlg { max-height:88dvh; overflow-y:auto; padding-top:20px; }
+  #dlgSet h2 { padding:0 44px; }
+  .xbtn { position:absolute; top:8px; right:8px; width:44px; height:44px; border-radius:50%; background:var(--bg); display:grid; place-items:center; color:var(--navy); z-index:2; }
+  .xbtn svg { width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:2.4; stroke-linecap:round; pointer-events:none; }
   .close { align-self:center; padding:8px 22px; border-radius:999px; background:var(--bg); min-height:44px; color:var(--muted); }
   /* 승리·패배 연출 (1초) */
   .fx { position:fixed; inset:0; z-index:50; display:grid; place-items:center; background:rgba(18,40,110,.72); animation:fxIn .15s ease-out; overflow:hidden; }
@@ -281,8 +285,8 @@
   <details><summary>렌주 규칙</summary>흑은 3-3, 4-4, 6목 이상 금지(✕ 표시), 정확히 5목이면 승리. 백은 5목 이상이면 승리.</details>
   <details><summary>엔진 정보</summary>고미의 엔진은 자체 개발한 B1(직선 패턴 신경망 + 몬테카를로 트리 탐색)입니다. 쉽게 말해 고미는 오목판의 가로·세로·대각선 줄 모양을 보고 "여기가 좋겠다"를 먼저 떠올린 뒤, 그다음 수들을 수천 번 미리 둬 보면서 가장 좋은 자리를 골라요. 이 모든 생각은 인터넷 서버가 아니라 지금 쓰는 폰이나 컴퓨터 안에서만 이뤄져요. 내가 둔 수는 어디로도 보내지 않아요.</details>
   <details><summary>고미 가중치 공개</summary>고미의 두뇌인 신경망 가중치를 GitHub에 공개했어요. 출처를 밝히면 비상업적 용도로 자유롭게 쓸 수 있어요(CC BY-NC 4.0). 내려받는 법과 사용법은 <a href="https://github.com/Nasser-Lim/komi-omok" target="_blank" rel="noopener">GitHub 저장소</a>에 있어요.</details>
-  <p class="contact">KOMI v1.0.0 · 엔진 B1</p>
-  <button class="close" data-close>닫기</button></div></dialog>
+  <p class="contact">KOMI v1.0.0 · 엔진 B1</p></div>
+  <button class="xbtn" data-close aria-label="닫기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></dialog>
 
 <script>
 const N = 15, cv = document.getElementById('board'), ctx = cv.getContext('2d');
