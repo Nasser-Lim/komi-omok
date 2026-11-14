@@ -1,5 +1,7 @@
 # 🐻 고미와 오목 한 판
 
+![오목 두는 고미 KOMI 프로모션 이미지](assets/komi-hero.png)
+
 ![version](https://img.shields.io/badge/KOMI-v1.0.0-1d8cf0) ![engine](https://img.shields.io/badge/engine-B1-12286e) ![weights](https://img.shields.io/badge/weights-CC%20BY--NC%204.0-ffcc2e)
 
 **KOMI · 오목 두는 고미** — 링크만 열면 바로 시작하는 오목 게임이에요.
